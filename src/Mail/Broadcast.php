@@ -38,7 +38,7 @@ final class Broadcast {
 	private const UNSUBSCRIBE_PATTERN = '/\{\{\s*unsubscribe_url\s*\}\}/';
 
 	/** Headers Sendora sets on a broadcast itself, in lower case. */
-	private const SENDORA_WP_HEADERS = array( 'list-unsubscribe', 'list-unsubscribe-post' );
+	private const SENDORA_HEADERS = array( 'list-unsubscribe', 'list-unsubscribe-post' );
 
 	/**
 	 * The messages to send: one per recipient, each fit for the broadcast
@@ -86,7 +86,7 @@ final class Broadcast {
 		$message = $message->with_headers(
 			array_filter(
 				$message->headers,
-				static fn ( string $name ): bool => ! in_array( strtolower( $name ), self::SENDORA_WP_HEADERS, true ),
+				static fn ( string $name ): bool => ! in_array( strtolower( $name ), self::SENDORA_HEADERS, true ),
 				ARRAY_FILTER_USE_KEY
 			)
 		);
