@@ -5,6 +5,8 @@
 	<file>.</file>
 	<exclude-pattern>/vendor/*</exclude-pattern>
 	<exclude-pattern>/node_modules/*</exclude-pattern>
+	<!-- The release build, a copy of the plugin. -->
+	<exclude-pattern>/build/*</exclude-pattern>
 	<!-- Development scripts, never shipped. -->
 	<exclude-pattern>/bin/*</exclude-pattern>
 
