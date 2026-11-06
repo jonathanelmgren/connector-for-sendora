@@ -13,8 +13,8 @@ use ConnectorForSendora\Suppression\SuppressionList;
 
 /**
  * Tools → Sendora suppressions: the addresses the site no longer sends to,
- * searchable, each removable. Sendora keeps a list of its own, which this
- * one cannot clear.
+ * searchable, each removable, and an import of an address verifier's
+ * results. Sendora keeps a list of its own, which this one cannot clear.
  */
 final class SuppressionPage {
 
@@ -42,15 +42,17 @@ final class SuppressionPage {
 	/**
 	 * A page.
 	 *
-	 * @param SuppressionList $suppression The list it shows.
+	 * @param SuppressionList   $suppression The list it shows.
+	 * @param SuppressionImport $import      The import it offers.
 	 */
-	public function __construct( private readonly SuppressionList $suppression ) {
+	public function __construct( private readonly SuppressionList $suppression, private readonly SuppressionImport $import ) {
 	}
 
 	/** Hooks the page and its handler in. */
 	public function register(): void {
 		add_action( 'admin_menu', array( $this, 'add_page' ) );
 		add_action( 'admin_post_' . self::REMOVE_ACTION, array( $this, 'handle_remove' ) );
+		$this->import->register();
 	}
 
 	/** Adds the page under Tools. */
@@ -122,6 +124,7 @@ final class SuppressionPage {
 
 		$this->render_table( $rows );
 		$this->render_pagination( $total, $current, $search );
+		$this->import->render();
 		echo '</div>';
 	}
 

@@ -9,5 +9,7 @@ parameters:
 		- tests/mu-plugins
 	bootstrapFiles:
 		- tests/phpstan-bootstrap.php
+	scanFiles:
+		- vendor/php-stubs/wp-cli-stubs/wp-cli-stubs.php
 	scanDirectories:
 		- vendor/wp-phpunit/wp-phpunit

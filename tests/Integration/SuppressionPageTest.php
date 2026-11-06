@@ -9,7 +9,9 @@ declare(strict_types=1);
 
 namespace ConnectorForSendora\Tests\Integration;
 
+use ConnectorForSendora\Admin\SuppressionImport;
 use ConnectorForSendora\Admin\SuppressionPage;
+use ConnectorForSendora\Import\Importer;
 use ConnectorForSendora\Suppression\SuppressionList;
 
 /**
@@ -74,7 +76,7 @@ final class SuppressionPageTest extends TestCase {
 	/** The screen's HTML. */
 	private function render(): string {
 		ob_start();
-		( new SuppressionPage( $this->list ) )->render();
+		( new SuppressionPage( $this->list, new SuppressionImport( new Importer( $this->list ) ) ) )->render();
 		return (string) ob_get_clean();
 	}
 }

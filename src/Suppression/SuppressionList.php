@@ -56,6 +56,9 @@ final class SuppressionList {
 	/** The table's name without the site's prefix. */
 	private const TABLE = 'connector_for_sendora_suppressions';
 
+	/** How many addresses one query looks up or adds. */
+	private const CHUNK = 500;
+
 	/** How a time is written in the table, always in UTC. */
 	private const DATE_FORMAT = 'Y-m-d H:i:s';
 
@@ -76,25 +79,21 @@ final class SuppressionList {
 
 	/**
 	 * Adds the address for the reason, or, when it is there for that reason
-	 * already, records the new source, stream and time.
+	 * already, records the new source, stream and time. An unknown reason or
+	 * source, or an empty or too long address, is refused with an
+	 * \InvalidArgumentException.
 	 *
 	 * @param string                 $email     The address.
 	 * @param string                 $reason    One of {@see self::REASONS}.
 	 * @param string                 $source    One of {@see self::SOURCES}.
 	 * @param string|null            $stream_id The Sendora stream the event came from; null when not known.
 	 * @param DateTimeImmutable|null $when      When it happened; now when not given.
-	 * @throws \InvalidArgumentException The reason or the source is not one of the known ones, or the address is empty or too long.
 	 * @throws QueryFailed The database refused the write.
 	 */
 	public function add( string $email, string $reason, string $source, ?string $stream_id = null, ?DateTimeImmutable $when = null ): void {
 		global $wpdb;
 		$email = self::normalise( $email );
-		if ( '' === $email || strlen( $email ) > Schema::EMAIL_LENGTH ) {
-			throw new \InvalidArgumentException( 'The address is empty or too long for the suppression list.' );
-		}
-		if ( ! in_array( $reason, self::REASONS, true ) || ! in_array( $source, self::SOURCES, true ) ) {
-			throw new \InvalidArgumentException( 'Unknown suppression reason or source.' );
-		}
+		self::check( $email, $reason, $source );
 		$when = ( $when ?? new DateTimeImmutable() )->setTimezone( new DateTimeZone( 'UTC' ) )->format( self::DATE_FORMAT );
 
 		// prepare() writes null as '', which NULLIF() turns back into NULL.
@@ -115,6 +114,81 @@ final class SuppressionList {
 		if ( false === $written ) {
 			throw QueryFailed::last( 'Adding to the suppression list' );
 		}
+	}
+
+	/**
+	 * Of these addresses, the ones on the list for the reason.
+	 *
+	 * @param list<string> $emails The addresses, normalised.
+	 * @param string       $reason One of {@see self::REASONS}.
+	 * @return list<string>
+	 */
+	public function listed( array $emails, string $reason ): array {
+		global $wpdb;
+		$listed = array();
+		foreach ( array_chunk( array_values( array_unique( $emails ) ), self::CHUNK ) as $chunk ) {
+			$hashes = array_map( array( Schema::class, 'hash' ), $chunk );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- the plugin's own table; nothing caches it.
+			$found = $wpdb->get_col(
+				// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- the hashes are spread in.
+				$wpdb->prepare(
+					// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- one %s per hash, filled in below.
+					'SELECT email FROM %i WHERE reason = %s AND email_hash IN (' . implode( ', ', array_fill( 0, count( $hashes ), '%s' ) ) . ')',
+					self::table(),
+					$reason,
+					...$hashes
+				)
+			);
+			array_push( $listed, ...array_map( 'strval', $found ) );
+		}
+		return array_values( array_intersect( $emails, $listed ) );
+	}
+
+	/**
+	 * Adds the addresses that are not on the list for the reason yet, and
+	 * leaves the rows that are as they are. Refuses what {@see self::add()}
+	 * refuses, before writing anything.
+	 *
+	 * @param list<string> $emails The addresses.
+	 * @param string       $reason One of {@see self::REASONS}.
+	 * @param string       $source One of {@see self::SOURCES}.
+	 * @return list<string> The addresses added, normalised.
+	 * @throws QueryFailed The database refused the write.
+	 */
+	public function add_new( array $emails, string $reason, string $source ): array {
+		global $wpdb;
+		$emails = array_values( array_unique( array_map( array( self::class, 'normalise' ), $emails ) ) );
+		foreach ( $emails as $email ) {
+			self::check( $email, $reason, $source );
+		}
+		$when  = gmdate( self::DATE_FORMAT );
+		$added = array();
+		foreach ( array_chunk( $emails, self::CHUNK ) as $chunk ) {
+			$new = array_values( array_diff( $chunk, $this->listed( $chunk, $reason ) ) );
+			if ( array() === $new ) {
+				continue;
+			}
+			$values = array();
+			foreach ( $new as $email ) {
+				array_push( $values, $email, Schema::hash( $email ), $reason, $source, $when );
+			}
+			// A row added since the lookup above keeps its own source and time.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- the plugin's own table; nothing caches it.
+			$written = $wpdb->query(
+				// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- the values are spread in.
+				$wpdb->prepare(
+					// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- five placeholders per address, filled in below.
+					'INSERT INTO %i (email, email_hash, reason, source, suppressed_at) VALUES ' . implode( ', ', array_fill( 0, count( $new ), '(%s, %s, %s, %s, %s)' ) ) . ' ON DUPLICATE KEY UPDATE id = id',
+					self::table(),
+					...$values
+				)
+			);
+			if ( false === $written ) {
+				throw QueryFailed::last( 'Adding to the suppression list' );
+			}
+			array_push( $added, ...$new );
+		}
+		return $added;
 	}
 
 	/**
@@ -237,6 +311,23 @@ final class SuppressionList {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- the plugin's own table, read once per recipient of a send.
 		$found = $wpdb->get_col( $wpdb->prepare( 'SELECT reason FROM %i WHERE email = %s', self::table(), $email ) );
 		return array_values( array_intersect( self::REASONS, array_map( 'strval', $found ) ) );
+	}
+
+	/**
+	 * Refuses a row the list cannot keep.
+	 *
+	 * @param string $email  The address, normalised.
+	 * @param string $reason The reason.
+	 * @param string $source The source.
+	 * @throws \InvalidArgumentException The reason or the source is not one of the known ones, or the address is empty or too long.
+	 */
+	private static function check( string $email, string $reason, string $source ): void {
+		if ( '' === $email || strlen( $email ) > Schema::EMAIL_LENGTH ) {
+			throw new \InvalidArgumentException( 'The address is empty or too long for the suppression list.' );
+		}
+		if ( ! in_array( $reason, self::REASONS, true ) || ! in_array( $source, self::SOURCES, true ) ) {
+			throw new \InvalidArgumentException( 'Unknown suppression reason or source.' );
+		}
 	}
 
 	/**
