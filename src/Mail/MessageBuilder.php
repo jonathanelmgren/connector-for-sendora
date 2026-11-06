@@ -111,9 +111,11 @@ final class MessageBuilder {
 			}
 		}
 
-		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress's own hook, as wp_mail() uses it.		/** This filter is documented in wp-includes/pluggable.php. */
+		/** This filter is documented in wp-includes/pluggable.php. */
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress's own hook, as wp_mail() uses it.
 		$content_type = (string) apply_filters( 'wp_mail_content_type', $content_type ?? self::CONTENT_TYPE_TEXT );
-		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress's own hook, as wp_mail() uses it.		/** This filter is documented in wp-includes/pluggable.php. */
+		/** This filter is documented in wp-includes/pluggable.php. */
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress's own hook, as wp_mail() uses it.
 		$charset = (string) apply_filters( 'wp_mail_charset', $charset ?? get_bloginfo( 'charset' ) );
 
 		$utf8 = static fn ( string $text ): string => self::to_utf8( $text, $charset );
@@ -153,9 +155,11 @@ final class MessageBuilder {
 		$email = $header->email ?? self::non_empty( $this->settings->get( Settings::FROM_EMAIL ) ) ?? self::default_from_email();
 		$name  = $header->name ?? self::non_empty( $this->settings->get( Settings::FROM_NAME ) ) ?? self::DEFAULT_FROM_NAME;
 
-		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress's own hook, as wp_mail() uses it.		/** This filter is documented in wp-includes/pluggable.php. */
+		/** This filter is documented in wp-includes/pluggable.php. */
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress's own hook, as wp_mail() uses it.
 		$email = (string) apply_filters( 'wp_mail_from', $email );
-		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress's own hook, as wp_mail() uses it.		/** This filter is documented in wp-includes/pluggable.php. */
+		/** This filter is documented in wp-includes/pluggable.php. */
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress's own hook, as wp_mail() uses it.
 		$name = (string) apply_filters( 'wp_mail_from_name', $name );
 
 		return new Address( $email, self::non_empty( $name ) );
