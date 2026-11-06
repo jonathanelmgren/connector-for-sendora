@@ -29,6 +29,13 @@ final class MessageBuilder {
 	/** The charset Sendora's API takes text in. */
 	private const UTF8 = 'UTF-8';
 
+	/**
+	 * A path that starts with a scheme (`phar://`, `ftp://`, …) and would
+	 * go through a stream wrapper. PHPMailer, and so wp_mail(), refuses
+	 * such an attachment before touching it; this is its own test.
+	 */
+	private const STREAM_WRAPPER_PATH = '#^[a-z][a-z\d+.-]*://#i';
+
 	/** The error code for a message whose charset cannot be converted to UTF-8. */
 	public const ERROR_UNSUPPORTED_CHARSET = 'unsupported_charset';
 
@@ -224,7 +231,8 @@ final class MessageBuilder {
 
 	/**
 	 * The files to attach. A string key names the file, as wp_mail() takes
-	 * it; a file that cannot be read is skipped, as wp_mail() skips it.
+	 * it. A path through a stream wrapper, or a file that cannot be read,
+	 * is skipped, as wp_mail() skips it; the first is never looked at.
 	 *
 	 * @param mixed $attachments wp_mail()'s attachments argument.
 	 * @return list<Attachment>
@@ -232,7 +240,7 @@ final class MessageBuilder {
 	private static function attachments( mixed $attachments ): array {
 		$files = array();
 		foreach ( self::list_of( $attachments, "\n" ) as $name => $path ) {
-			if ( ! is_file( $path ) || ! is_readable( $path ) ) {
+			if ( 1 === preg_match( self::STREAM_WRAPPER_PATH, $path ) || ! is_file( $path ) || ! is_readable( $path ) ) {
 				continue;
 			}
 			$name    = is_string( $name ) && '' !== $name ? $name : wp_basename( $path );

@@ -14,6 +14,7 @@ use ConnectorForSendora\Mail\Mailer;
 use ConnectorForSendora\Mail\MessageBuilder;
 use ConnectorForSendora\Mail\SendFailed;
 use ConnectorForSendora\Settings\Settings;
+use ConnectorForSendora\Tests\Support\RecordingStreamWrapper;
 use WP_Error;
 
 /**
@@ -217,6 +218,20 @@ final class MailerTest extends TestCase {
 		$this->assertSame( array(), $this->transport->sent );
 		$this->assertCount( 1, $errors );
 		$this->assertSame( MessageBuilder::ERROR_UNSUPPORTED_CHARSET, $errors[0]->get_error_data()['sendora_error_code'] );
+	}
+
+	public function test_an_attachment_path_with_a_scheme_is_skipped_without_being_looked_at(): void {
+		$this->configure();
+		RecordingStreamWrapper::register();
+
+		try {
+			wp_mail( 'anna@example.com', 'Hi', 'Body', '', array( RecordingStreamWrapper::SCHEME . '://invoice.pdf', 'ftp://example.com/invoice.pdf' ) );
+		} finally {
+			RecordingStreamWrapper::unregister();
+		}
+
+		$this->assertSame( array(), $this->transport->sent[0]->attachments );
+		$this->assertSame( array(), RecordingStreamWrapper::$stats );
 	}
 
 	public function test_a_failed_send_returns_false_and_fires_wp_mail_failed_with_sendora_s_error(): void {
