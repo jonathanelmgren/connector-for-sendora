@@ -30,6 +30,9 @@ final class UninstallerTest extends TestCase {
 	/** A user id for the per-user transients. */
 	private const USER_ID = 7;
 
+	/** The administrator the WordPress test suite installs. */
+	private const ADMIN_ID = 1;
+
 	/** Another plugin's option, which uninstalling leaves alone. */
 	private const OTHER_OPTION = 'another_plugin_settings';
 
@@ -44,10 +47,23 @@ final class UninstallerTest extends TestCase {
 		update_option( self::OTHER_OPTION, 'kept' );
 		set_transient( self::OTHER_TRANSIENT, 'kept', HOUR_IN_SECONDS );
 
+		// A persistent object cache keeps transients in the cache, not in the options table.
+		// Null before anything set it, which wp_using_ext_object_cache() would read as "leave as it is".
+		$was_using_cache = (bool) wp_using_ext_object_cache( true );
+		set_transient( SettingsPage::TEST_RESULT_PREFIX . self::ADMIN_ID, array( 'sent' => true ), HOUR_IN_SECONDS );
+		set_transient( SuppressionImport::TRANSIENT_PREFIX . self::ADMIN_ID, array( 'state' => 'preview' ), HOUR_IN_SECONDS );
+		set_transient( self::OTHER_TRANSIENT, 'cached', HOUR_IN_SECONDS );
+
 		remove_filter( 'query', array( $this, '_create_temporary_tables' ) );
 		remove_filter( 'query', array( $this, '_drop_temporary_tables' ) );
 
 		Uninstaller::uninstall();
+
+		$this->assertFalse( get_transient( SettingsPage::TEST_RESULT_PREFIX . self::ADMIN_ID ) );
+		$this->assertFalse( get_transient( SuppressionImport::TRANSIENT_PREFIX . self::ADMIN_ID ) );
+		$this->assertSame( 'cached', get_transient( self::OTHER_TRANSIENT ) );
+		delete_transient( self::OTHER_TRANSIENT );
+		wp_using_ext_object_cache( $was_using_cache );
 
 		$this->assertFalse( self::table_exists( SuppressionList::table() ) );
 		$this->assertFalse( self::table_exists( DeliveryLog::table() ) );

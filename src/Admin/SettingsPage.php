@@ -34,7 +34,7 @@ final class SettingsPage {
 	private const GROUP = 'connector_for_sendora';
 
 	/** The capability the page and the test email need. */
-	private const CAPABILITY = 'manage_options';
+	public const CAPABILITY = 'manage_options';
 
 	/** The admin-post action that sends the test email. */
 	public const TEST_ACTION = 'connector_for_sendora_test_email';

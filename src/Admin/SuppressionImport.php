@@ -70,7 +70,7 @@ final class SuppressionImport {
 	private const MIME_TYPES = array( 'csv' => 'text/csv' );
 
 	/** The capability an import needs. */
-	private const CAPABILITY = 'manage_options';
+	public const CAPABILITY = 'manage_options';
 
 	/**
 	 * Tells an upload from any other file; PHP's own check, unless a test
