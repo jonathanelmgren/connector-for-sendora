@@ -2,10 +2,10 @@
 
 Written against The Newsletter Plugin 9.5. Put the code in a small plugin of
 your own (for instance `wp-content/mu-plugins/sendora-newsletter.php`), not in
-Connector for Sendora.
+Sendora.
 
 The Newsletter Plugin sends through `wp_mail()` with its default mailer, so
-Connector for Sendora sends its messages. A delivery add-on that registers its
+Sendora sends its messages. A delivery add-on that registers its
 own mailer (SMTP, Amazon SES and others) skips `wp_mail()`; turn it off.
 
 Each message goes to one subscriber, so each gets their own unsubscribe link.
@@ -37,7 +37,7 @@ add_filter(
 );
 ```
 
-Connector for Sendora removes the header before the message is sent, and
+The Sendora plugin removes the header before the message is sent, and
 removes The Newsletter Plugin's `List-Unsubscribe` headers too: Sendora sets
 its own.
 
@@ -119,7 +119,7 @@ function my_site_tnp_set_status( string $status_constant ): callable {
 	};
 }
 
-add_action( 'connector_for_sendora_unsubscribed', my_site_tnp_set_status( 'STATUS_UNSUBSCRIBED' ) );
-add_action( 'connector_for_sendora_bounced', my_site_tnp_set_status( 'STATUS_BOUNCED' ) );
-add_action( 'connector_for_sendora_complained', my_site_tnp_set_status( 'STATUS_COMPLAINED' ) );
+add_action( 'sendora_unsubscribed', my_site_tnp_set_status( 'STATUS_UNSUBSCRIBED' ) );
+add_action( 'sendora_bounced', my_site_tnp_set_status( 'STATUS_BOUNCED' ) );
+add_action( 'sendora_complained', my_site_tnp_set_status( 'STATUS_COMPLAINED' ) );
 ```

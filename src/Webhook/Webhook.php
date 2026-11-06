@@ -2,36 +2,36 @@
 /**
  * Receives Sendora's delivery reports.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Webhook;
+namespace SendoraWP\Webhook;
 
-use ConnectorForSendora\Database\QueryFailed;
-use ConnectorForSendora\Settings\Settings;
-use ConnectorForSendora\Suppression\SuppressionList;
-use ConnectorForSendora\Vendor\Sendora\Events\BouncedEvent;
-use ConnectorForSendora\Vendor\Sendora\Events\SpamComplaintEvent;
-use ConnectorForSendora\Vendor\Sendora\Events\UnsubscribedEvent;
-use ConnectorForSendora\Vendor\Sendora\Events\WebhookEvent;
-use ConnectorForSendora\Vendor\Sendora\Exception\WebhookVerificationException;
-use ConnectorForSendora\Vendor\Sendora\WebhookVerifier;
+use SendoraWP\Database\QueryFailed;
+use SendoraWP\Settings\Settings;
+use SendoraWP\Suppression\SuppressionList;
+use SendoraWP\Vendor\Sendora\Events\BouncedEvent;
+use SendoraWP\Vendor\Sendora\Events\SpamComplaintEvent;
+use SendoraWP\Vendor\Sendora\Events\UnsubscribedEvent;
+use SendoraWP\Vendor\Sendora\Events\WebhookEvent;
+use SendoraWP\Vendor\Sendora\Exception\WebhookVerificationException;
+use SendoraWP\Vendor\Sendora\WebhookVerifier;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
 
 /**
- * `POST /wp-json/connector-for-sendora/v1/webhook`. Sendora's SDK checks
+ * `POST /wp-json/sendora/v1/webhook`. Sendora's SDK checks
  * the signature and its age against the signing secret; without a secret
  * the route answers 503, so Sendora retries until one is set.
  *
- * A verified event fires `connector_for_sendora_event`. A hard bounce, a
+ * A verified event fires `sendora_event`. A hard bounce, a
  * complaint and an unsubscribe also put the address on the suppression
- * list and fire `connector_for_sendora_bounced`,
- * `connector_for_sendora_complained` or `connector_for_sendora_unsubscribed`.
+ * list and fire `sendora_bounced`,
+ * `sendora_complained` or `sendora_unsubscribed`.
  * A delivery already handled answers 200 and changes nothing. A delivery
  * another request is handling, or whose handling fails, answers 503 and is
  * handled on Sendora's retry.
@@ -39,7 +39,7 @@ use WP_REST_Server;
 final class Webhook {
 
 	/** The REST namespace. */
-	public const NAMESPACE = 'connector-for-sendora/v1';
+	public const NAMESPACE = 'sendora/v1';
 
 	/** The route, under the namespace. */
 	public const ROUTE = '/webhook';
@@ -51,16 +51,16 @@ final class Webhook {
 	public const EVENTS = array( 'bounced', 'spam_complaint', 'unsubscribed' );
 
 	/** Fired for every verified event. */
-	public const EVENT_ACTION = 'connector_for_sendora_event';
+	public const EVENT_ACTION = 'sendora_event';
 
 	/** Fired for a hard bounce. */
-	public const BOUNCED_ACTION = 'connector_for_sendora_bounced';
+	public const BOUNCED_ACTION = 'sendora_bounced';
 
 	/** Fired for a spam complaint. */
-	public const COMPLAINED_ACTION = 'connector_for_sendora_complained';
+	public const COMPLAINED_ACTION = 'sendora_complained';
 
 	/** Fired for an unsubscribe. */
-	public const UNSUBSCRIBED_ACTION = 'connector_for_sendora_unsubscribed';
+	public const UNSUBSCRIBED_ACTION = 'sendora_unsubscribed';
 
 	/** The answer without a signing secret, or while a delivery cannot be handled yet: Sendora retries. */
 	private const STATUS_UNAVAILABLE = 503;
@@ -116,8 +116,8 @@ final class Webhook {
 		$secret = $this->settings->get( Settings::WEBHOOK_SECRET );
 		if ( '' === $secret ) {
 			return new WP_Error(
-				'connector_for_sendora_webhook_secret_missing',
-				__( 'The webhook has no signing secret set.', 'connector-for-sendora' ),
+				'sendora_webhook_secret_missing',
+				__( 'The webhook has no signing secret set.', 'sendora' ),
 				array( 'status' => self::STATUS_UNAVAILABLE )
 			);
 		}
@@ -126,7 +126,7 @@ final class Webhook {
 			$event = WebhookVerifier::verify( $request->get_body(), $request->get_header( self::SIGNATURE_HEADER ), $secret );
 		} catch ( WebhookVerificationException $e ) {
 			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- the SDK's property.
-			return new WP_Error( 'connector_for_sendora_' . $e->errorCode, $e->getMessage(), array( 'status' => self::STATUS_BAD_REQUEST ) );
+			return new WP_Error( 'sendora_' . $e->errorCode, $e->getMessage(), array( 'status' => self::STATUS_BAD_REQUEST ) );
 		}
 
 		try {
@@ -139,8 +139,8 @@ final class Webhook {
 		}
 		if ( DeliveryLog::IN_PROGRESS === $claim ) {
 			return new WP_Error(
-				'connector_for_sendora_delivery_in_progress',
-				__( 'This delivery is being handled already.', 'connector-for-sendora' ),
+				'sendora_delivery_in_progress',
+				__( 'This delivery is being handled already.', 'sendora' ),
 				array( 'status' => self::STATUS_UNAVAILABLE )
 			);
 		}
@@ -159,8 +159,8 @@ final class Webhook {
 	/** The answer to a delivery that could not be handled, which Sendora retries. */
 	private static function unhandled(): WP_Error {
 		return new WP_Error(
-			'connector_for_sendora_delivery_failed',
-			__( 'The delivery could not be handled.', 'connector-for-sendora' ),
+			'sendora_delivery_failed',
+			__( 'The delivery could not be handled.', 'sendora' ),
 			array( 'status' => self::STATUS_UNAVAILABLE )
 		);
 	}
@@ -191,20 +191,20 @@ final class Webhook {
 		 * @param string               $type    The event's name, such as `'delivered'` or `'bounced'`.
 		 * @param array<string, mixed> $payload The event as Sendora sent it.
 		 */
-		do_action( self::EVENT_ACTION, $event->event, $payload ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- the constant is connector_for_sendora_event.
+		do_action( self::EVENT_ACTION, $event->event, $payload ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- the constant is sendora_event.
 
 		if ( null !== $suppressed ) {
 			[ $email, $action ] = $suppressed;
 			/**
-			 * Fires for a hard bounce (`connector_for_sendora_bounced`), a spam
-			 * complaint (`connector_for_sendora_complained`) or an unsubscribe
-			 * (`connector_for_sendora_unsubscribed`), once the address is on
+			 * Fires for a hard bounce (`sendora_bounced`), a spam
+			 * complaint (`sendora_complained`) or an unsubscribe
+			 * (`sendora_unsubscribed`), once the address is on
 			 * the suppression list.
 			 *
 			 * @param string               $email   The address, in lower case.
 			 * @param array<string, mixed> $payload The event as Sendora sent it.
 			 */
-			do_action( $action, $email, $payload ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- the constants are prefixed connector_for_sendora_.
+			do_action( $action, $email, $payload ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- the constants are prefixed sendora_.
 		}
 	}
 

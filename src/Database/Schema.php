@@ -2,15 +2,15 @@
 /**
  * The plugin's own database tables.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Database;
+namespace SendoraWP\Database;
 
-use ConnectorForSendora\Suppression\SuppressionList;
-use ConnectorForSendora\Webhook\DeliveryLog;
+use SendoraWP\Suppression\SuppressionList;
+use SendoraWP\Webhook\DeliveryLog;
 
 /**
  * Creates and updates the suppression list's table and the table of
@@ -21,7 +21,7 @@ use ConnectorForSendora\Webhook\DeliveryLog;
 final class Schema {
 
 	/** The option that holds the version of the schema the tables have. */
-	public const VERSION_OPTION = 'connector_for_sendora_db_version';
+	public const VERSION_OPTION = 'sendora_db_version';
 
 	/** The schema's version; raise it with every change to a table below. */
 	public const VERSION = '1';

@@ -6,12 +6,12 @@ Written against MailPoet 5.45.
 
 MailPoet never calls `wp_mail()`. Each of its sending methods (MailPoet's
 Sending Service, your web host, SMTP, Amazon SES, SendGrid) sends with MailPoet's
-own mailer, and no filter makes it use `wp_mail()`. Connector for Sendora
+own mailer, and no filter makes it use `wp_mail()`. The Sendora plugin
 therefore cannot send MailPoet's newsletters, or its confirmation and welcome
 emails, and there is no unsubscribe link to set up for them.
 
 Under **MailPoet → Settings → Send With…**, turn off sending WordPress's own
-emails with MailPoet: with Connector for Sendora active, WordPress's emails go
+emails with MailPoet: with the Sendora plugin active, WordPress's emails go
 through Sendora and that setting does nothing.
 
 ## Keeping subscribers in step
@@ -34,9 +34,9 @@ function my_site_mailpoet_unsubscribe( string $email ): void {
 	}
 }
 
-add_action( 'connector_for_sendora_unsubscribed', 'my_site_mailpoet_unsubscribe' );
-add_action( 'connector_for_sendora_complained', 'my_site_mailpoet_unsubscribe' );
+add_action( 'sendora_unsubscribed', 'my_site_mailpoet_unsubscribe' );
+add_action( 'sendora_complained', 'my_site_mailpoet_unsubscribe' );
 ```
 
 MailPoet's public API cannot mark a subscriber as bounced, so a hard bounce
-Sendora reports stays on Connector for Sendora's suppression list only.
+Sendora reports stays on the plugin's suppression list only.

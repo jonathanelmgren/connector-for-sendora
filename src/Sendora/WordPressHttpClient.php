@@ -2,20 +2,20 @@
 /**
  * A PSR-18 client for Sendora's SDK over WordPress's HTTP API.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Sendora;
+namespace SendoraWP\Sendora;
 
-use ConnectorForSendora\Vendor\Nyholm\Psr7\Factory\Psr17Factory;
-use ConnectorForSendora\Vendor\Psr\Http\Client\ClientInterface;
-use ConnectorForSendora\Vendor\Psr\Http\Message\RequestFactoryInterface;
-use ConnectorForSendora\Vendor\Psr\Http\Message\RequestInterface;
-use ConnectorForSendora\Vendor\Psr\Http\Message\ResponseInterface;
-use ConnectorForSendora\Vendor\Psr\Http\Message\StreamFactoryInterface;
-use ConnectorForSendora\Vendor\Psr\Http\Message\StreamInterface;
+use SendoraWP\Vendor\Nyholm\Psr7\Factory\Psr17Factory;
+use SendoraWP\Vendor\Psr\Http\Client\ClientInterface;
+use SendoraWP\Vendor\Psr\Http\Message\RequestFactoryInterface;
+use SendoraWP\Vendor\Psr\Http\Message\RequestInterface;
+use SendoraWP\Vendor\Psr\Http\Message\ResponseInterface;
+use SendoraWP\Vendor\Psr\Http\Message\StreamFactoryInterface;
+use SendoraWP\Vendor\Psr\Http\Message\StreamInterface;
 
 /**
  * Sends the SDK's requests with wp_remote_request() rather than the SDK's

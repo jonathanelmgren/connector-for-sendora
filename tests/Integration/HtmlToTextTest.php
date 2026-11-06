@@ -2,14 +2,14 @@
 /**
  * Tests for writing a text part from HTML.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Tests\Integration;
+namespace SendoraWP\Tests\Integration;
 
-use ConnectorForSendora\Mail\HtmlToText;
+use SendoraWP\Mail\HtmlToText;
 
 /**
  * The text a reader of the HTML would see, with link addresses kept.

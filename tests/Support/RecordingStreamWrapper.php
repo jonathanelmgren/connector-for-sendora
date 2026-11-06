@@ -2,12 +2,12 @@
 /**
  * A stream wrapper that records every path it is asked about.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Tests\Support;
+namespace SendoraWP\Tests\Support;
 
 /**
  * Registered for a scheme, it answers every stat as a readable file and
@@ -16,7 +16,7 @@ namespace ConnectorForSendora\Tests\Support;
 final class RecordingStreamWrapper {
 
 	/** The scheme the wrapper is registered for. */
-	public const SCHEME = 'connector-for-sendora-recording';
+	public const SCHEME = 'sendora-recording';
 
 	/** The mode of a regular file anyone can read: S_IFREG | 0644. */
 	private const READABLE_FILE_MODE = 0100644;

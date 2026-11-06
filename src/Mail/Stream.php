@@ -2,17 +2,17 @@
 /**
  * Which kind of Sendora stream a message goes on.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Mail;
+namespace SendoraWP\Mail;
 
 /**
  * Every message is transactional unless something asks for the broadcast
  * stream: the `X-Sendora-Stream: broadcast` header, for plugins that can
- * only add headers, or the `connector_for_sendora_stream` filter, for one
+ * only add headers, or the `sendora_stream` filter, for one
  * that recognises its own messages from wp_mail()'s arguments.
  */
 final class Stream {
@@ -22,7 +22,7 @@ final class Stream {
 	public const BROADCAST = 'broadcast';
 
 	/** The filter that chooses the stream. */
-	public const FILTER = 'connector_for_sendora_stream';
+	public const FILTER = 'sendora_stream';
 
 	/** The header that asks for a stream. It is never sent. */
 	public const HEADER = 'X-Sendora-Stream';
@@ -45,7 +45,7 @@ final class Stream {
 		 * @param string               $stream `'transactional'`, or `'broadcast'` when the message's `X-Sendora-Stream` header asks for it.
 		 * @param array<string, mixed> $atts   wp_mail()'s arguments: to, subject, message, headers, attachments.
 		 */
-		$chosen = apply_filters( self::FILTER, $stream, $atts ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- the constant is connector_for_sendora_stream.
+		$chosen = apply_filters( self::FILTER, $stream, $atts ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- the constant is sendora_stream.
 
 		return self::is_broadcast( $chosen ) ? self::BROADCAST : self::TRANSACTIONAL;
 	}

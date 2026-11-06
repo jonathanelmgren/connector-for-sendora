@@ -2,12 +2,12 @@
 /**
  * A message that was not accepted for delivery.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Mail;
+namespace SendoraWP\Mail;
 
 use RuntimeException;
 

@@ -2,12 +2,12 @@
 /**
  * Keeps every test run away from a Sendora key and Sendora's hosts.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Tests\Support;
+namespace SendoraWP\Tests\Support;
 
 use WP_Error;
 use WpOrg\Requests\Exception as RequestsException;
@@ -27,25 +27,25 @@ final class SendoraGuard {
 
 	/**
 	 * Variables that would hand a run a Sendora key or address: the plugin's
-	 * constant's name, the SDK's own two, and the names other projects on
-	 * the same machine use. Keep in step with bin/env.mjs.
+	 * constant's name (which other projects on the same machine use too),
+	 * the SDK's own two, and the API URL those projects use. Keep in step
+	 * with bin/env.mjs.
 	 */
 	public const VARIABLES = array(
-		'CONNECTOR_FOR_SENDORA_API_KEY',
+		'SENDORA_API_KEY',
 		'SENDORA_API_TOKEN',
 		'SENDORA_BASE_URL',
-		'SENDORA_API_KEY',
 		'SENDORA_API_URL',
 	);
 
 	/** The constant wp-config.php would set the key with. */
-	public const KEY_CONSTANT = 'CONNECTOR_FOR_SENDORA_API_KEY';
+	public const KEY_CONSTANT = 'SENDORA_API_KEY';
 
 	/** The only hosts a test request may go to. */
 	public const ALLOWED_HOSTS = array( 'localhost', '127.0.0.1', '::1' );
 
 	/** The error code of a refused request. */
-	public const BLOCKED = 'connector_for_sendora_test_host_blocked';
+	public const BLOCKED = 'sendora_test_host_blocked';
 
 	/**
 	 * The action WordPress fires before it follows a redirect: Requests'

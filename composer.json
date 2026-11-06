@@ -1,5 +1,5 @@
 {
-	"name": "jonathanelmgren/connector-for-sendora",
+	"name": "sendora/sendora-for-wp",
 	"description": "Sends WordPress email through Sendora's API.",
 	"type": "wordpress-plugin",
 	"license": "GPL-2.0-or-later",
@@ -28,12 +28,12 @@
 	},
 	"autoload": {
 		"psr-4": {
-			"ConnectorForSendora\\": "src/"
+			"SendoraWP\\": "src/"
 		}
 	},
 	"autoload-dev": {
 		"psr-4": {
-			"ConnectorForSendora\\Tests\\": "tests/"
+			"SendoraWP\\Tests\\": "tests/"
 		}
 	},
 	"config": {
@@ -52,9 +52,9 @@
 	"extra": {
 		"strauss": {
 			"target_directory": "vendor",
-			"namespace_prefix": "ConnectorForSendora\\Vendor\\",
-			"classmap_prefix": "Connector_For_Sendora_Vendor_",
-			"constant_prefix": "CONNECTOR_FOR_SENDORA_VENDOR_",
+			"namespace_prefix": "SendoraWP\\Vendor\\",
+			"classmap_prefix": "SendoraWP_Vendor_",
+			"constant_prefix": "SENDORA_WP_VENDOR_",
 			"packages": [
 				"sendora/sendora-php",
 				"nyholm/psr7",

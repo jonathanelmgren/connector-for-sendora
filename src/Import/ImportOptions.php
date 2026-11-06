@@ -2,12 +2,12 @@
 /**
  * How to read an address verifier's export.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Import;
+namespace SendoraWP\Import;
 
 /**
  * The columns that hold the address and the verifier's status, and the

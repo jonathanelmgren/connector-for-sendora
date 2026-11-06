@@ -2,12 +2,12 @@
 /**
  * A file attached to a message.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Mail;
+namespace SendoraWP\Mail;
 
 /**
  * A file by its path on disk, with the name and type the recipient sees.

@@ -2,14 +2,14 @@
 /**
  * Tests for reading the settings.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Tests\Integration;
+namespace SendoraWP\Tests\Integration;
 
-use ConnectorForSendora\Settings\Settings;
+use SendoraWP\Settings\Settings;
 
 /**
  * Constants are looked up through the lookup the settings take, since a
@@ -25,7 +25,7 @@ final class SettingsTest extends TestCase {
 
 	public function test_a_constant_wins_over_the_saved_value(): void {
 		$this->configure( array( Settings::FROM_EMAIL => 'saved@example.com' ) );
-		$settings = self::with_constants( array( 'CONNECTOR_FOR_SENDORA_FROM_EMAIL' => 'constant@example.com' ) );
+		$settings = self::with_constants( array( 'SENDORA_FROM_EMAIL' => 'constant@example.com' ) );
 
 		$this->assertSame( 'constant@example.com', $settings->get( Settings::FROM_EMAIL ) );
 		$this->assertTrue( $settings->is_constant( Settings::FROM_EMAIL ) );
@@ -35,12 +35,12 @@ final class SettingsTest extends TestCase {
 	public function test_every_setting_has_its_constant(): void {
 		$this->assertSame(
 			array(
-				Settings::API_KEY              => 'CONNECTOR_FOR_SENDORA_API_KEY',
-				Settings::TRANSACTIONAL_STREAM => 'CONNECTOR_FOR_SENDORA_TRANSACTIONAL_STREAM',
-				Settings::BROADCAST_STREAM     => 'CONNECTOR_FOR_SENDORA_BROADCAST_STREAM',
-				Settings::FROM_EMAIL           => 'CONNECTOR_FOR_SENDORA_FROM_EMAIL',
-				Settings::FROM_NAME            => 'CONNECTOR_FOR_SENDORA_FROM_NAME',
-				Settings::WEBHOOK_SECRET       => 'CONNECTOR_FOR_SENDORA_WEBHOOK_SECRET',
+				Settings::API_KEY              => 'SENDORA_API_KEY',
+				Settings::TRANSACTIONAL_STREAM => 'SENDORA_TRANSACTIONAL_STREAM',
+				Settings::BROADCAST_STREAM     => 'SENDORA_BROADCAST_STREAM',
+				Settings::FROM_EMAIL           => 'SENDORA_FROM_EMAIL',
+				Settings::FROM_NAME            => 'SENDORA_FROM_NAME',
+				Settings::WEBHOOK_SECRET       => 'SENDORA_WEBHOOK_SECRET',
 			),
 			Settings::CONSTANTS
 		);
@@ -52,7 +52,7 @@ final class SettingsTest extends TestCase {
 	}
 
 	public function test_a_key_from_a_constant_configures_the_plugin(): void {
-		$settings = self::with_constants( array( 'CONNECTOR_FOR_SENDORA_API_KEY' => self::LIVE_KEY ) );
+		$settings = self::with_constants( array( 'SENDORA_API_KEY' => self::LIVE_KEY ) );
 
 		$this->assertTrue( $settings->is_configured() );
 		$this->assertFalse( $settings->is_test_mode() );

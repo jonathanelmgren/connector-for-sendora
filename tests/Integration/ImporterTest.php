@@ -2,21 +2,21 @@
 /**
  * Tests for importing an address verifier's results.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Tests\Integration;
+namespace SendoraWP\Tests\Integration;
 
-use ConnectorForSendora\Database\QueryFailed;
-use ConnectorForSendora\Import\ImportFailed;
-use ConnectorForSendora\Import\Importer;
-use ConnectorForSendora\Import\ImportOptions;
-use ConnectorForSendora\Import\ImportPlan;
-use ConnectorForSendora\Suppression\SuppressionList;
-use ConnectorForSendora\Tests\Support\BrokenQueries;
-use ConnectorForSendora\Tests\Support\CsvFiles;
+use SendoraWP\Database\QueryFailed;
+use SendoraWP\Import\ImportFailed;
+use SendoraWP\Import\Importer;
+use SendoraWP\Import\ImportOptions;
+use SendoraWP\Import\ImportPlan;
+use SendoraWP\Suppression\SuppressionList;
+use SendoraWP\Tests\Support\BrokenQueries;
+use SendoraWP\Tests\Support\CsvFiles;
 use DateTimeImmutable;
 
 /**

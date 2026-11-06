@@ -2,15 +2,15 @@
 /**
  * A request WordPress's HTTP API could not complete.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Sendora;
+namespace SendoraWP\Sendora;
 
-use ConnectorForSendora\Vendor\Psr\Http\Client\NetworkExceptionInterface;
-use ConnectorForSendora\Vendor\Psr\Http\Message\RequestInterface;
+use SendoraWP\Vendor\Psr\Http\Client\NetworkExceptionInterface;
+use SendoraWP\Vendor\Psr\Http\Message\RequestInterface;
 use RuntimeException;
 
 /**

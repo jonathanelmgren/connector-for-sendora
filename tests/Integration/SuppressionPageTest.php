@@ -2,17 +2,17 @@
 /**
  * Tests for the suppression list's screen.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Tests\Integration;
+namespace SendoraWP\Tests\Integration;
 
-use ConnectorForSendora\Admin\SuppressionImport;
-use ConnectorForSendora\Admin\SuppressionPage;
-use ConnectorForSendora\Import\Importer;
-use ConnectorForSendora\Suppression\SuppressionList;
+use SendoraWP\Admin\SuppressionImport;
+use SendoraWP\Admin\SuppressionPage;
+use SendoraWP\Import\Importer;
+use SendoraWP\Suppression\SuppressionList;
 
 /**
  * Renders the screen as an administrator.

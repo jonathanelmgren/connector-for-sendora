@@ -2,15 +2,15 @@
 /**
  * Tests for the plugin's tables.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Tests\Integration;
+namespace SendoraWP\Tests\Integration;
 
-use ConnectorForSendora\Database\Schema;
-use ConnectorForSendora\Suppression\SuppressionList;
+use SendoraWP\Database\Schema;
+use SendoraWP\Suppression\SuppressionList;
 
 /**
  * The suppression table's key and the schema's version.
@@ -24,7 +24,7 @@ final class SchemaTest extends TestCase {
 	private const DELIVERIES_TABLE_SUFFIX = 'deliveries';
 
 	/** A table lookup that finds nothing. */
-	private const FIND_NO_TABLE = "SHOW TABLES LIKE 'connector_for_sendora_missing'";
+	private const FIND_NO_TABLE = "SHOW TABLES LIKE 'sendora_missing'";
 
 	public function test_addresses_alike_past_the_index_prefix_are_kept_apart(): void {
 		$list   = new SuppressionList();

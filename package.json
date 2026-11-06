@@ -1,6 +1,6 @@
 {
-	"name": "connector-for-sendora",
-	"version": "0.1.0",
+	"name": "@sendora/sendora-for-wp",
+	"version": "0.2.0",
 	"private": true,
 	"description": "Sends WordPress email through Sendora's API.",
 	"license": "GPL-2.0-or-later",

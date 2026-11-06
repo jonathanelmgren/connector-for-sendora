@@ -2,19 +2,19 @@
 /**
  * Removes everything the plugin keeps, when it is deleted.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora;
+namespace SendoraWP;
 
-use ConnectorForSendora\Admin\SettingsPage;
-use ConnectorForSendora\Admin\SuppressionImport;
-use ConnectorForSendora\Database\Schema;
-use ConnectorForSendora\Settings\Settings;
-use ConnectorForSendora\Suppression\SuppressionList;
-use ConnectorForSendora\Webhook\DeliveryLog;
+use SendoraWP\Admin\SettingsPage;
+use SendoraWP\Admin\SuppressionImport;
+use SendoraWP\Database\Schema;
+use SendoraWP\Settings\Settings;
+use SendoraWP\Suppression\SuppressionList;
+use SendoraWP\Webhook\DeliveryLog;
 
 /**
  * Drops the plugin's tables and deletes its options and transients, on

@@ -2,23 +2,23 @@
 /**
  * Sends a message with Sendora's API.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Sendora;
+namespace SendoraWP\Sendora;
 
-use ConnectorForSendora\Mail\Address;
-use ConnectorForSendora\Mail\Attachment;
-use ConnectorForSendora\Mail\Message;
-use ConnectorForSendora\Mail\SendFailed;
-use ConnectorForSendora\Mail\Transport;
-use ConnectorForSendora\Vendor\Sendora\Attachment as SendoraAttachment;
-use ConnectorForSendora\Vendor\Sendora\Exception\ExceptionInterface;
-use ConnectorForSendora\Vendor\Sendora\Exception\SendoraException;
-use ConnectorForSendora\Vendor\Sendora\Sendora;
-use ConnectorForSendora\Vendor\Sendora\Types\ValidationIssue;
+use SendoraWP\Mail\Address;
+use SendoraWP\Mail\Attachment;
+use SendoraWP\Mail\Message;
+use SendoraWP\Mail\SendFailed;
+use SendoraWP\Mail\Transport;
+use SendoraWP\Vendor\Sendora\Attachment as SendoraAttachment;
+use SendoraWP\Vendor\Sendora\Exception\ExceptionInterface;
+use SendoraWP\Vendor\Sendora\Exception\SendoraException;
+use SendoraWP\Vendor\Sendora\Sendora;
+use SendoraWP\Vendor\Sendora\Types\ValidationIssue;
 
 /**
  * Sends each message as one `POST /v1/email` through Sendora's PHP SDK,

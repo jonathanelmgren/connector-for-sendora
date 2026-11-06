@@ -2,17 +2,17 @@
 /**
  * Tests for leaving suppressed recipients out of a send.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Tests\Integration;
+namespace SendoraWP\Tests\Integration;
 
-use ConnectorForSendora\Mail\Address;
-use ConnectorForSendora\Mail\Mailer;
-use ConnectorForSendora\Settings\Settings;
-use ConnectorForSendora\Suppression\SuppressionList;
+use SendoraWP\Mail\Address;
+use SendoraWP\Mail\Mailer;
+use SendoraWP\Settings\Settings;
+use SendoraWP\Suppression\SuppressionList;
 use WP_Error;
 
 /**
