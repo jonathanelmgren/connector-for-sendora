@@ -98,11 +98,18 @@ subscriber so The Newsletter Plugin stops sending to them too. Use
 email the subscriber and the site's admin.
 
 ```php
-function my_site_tnp_set_status( string $status ): callable {
-	return static function ( string $email ) use ( $status ): void {
-		if ( ! class_exists( 'Newsletter' ) ) {
+/**
+ * Sets the subscriber's status to one of The Newsletter Plugin's
+ * `TNP_User::STATUS_*` constants, named without the class: the class is
+ * looked up only when a report arrives, so this file loads before The
+ * Newsletter Plugin, or without it, too.
+ */
+function my_site_tnp_set_status( string $status_constant ): callable {
+	return static function ( string $email ) use ( $status_constant ): void {
+		if ( ! class_exists( 'Newsletter' ) || ! class_exists( 'TNP_User' ) ) {
 			return;
 		}
+		$status     = constant( 'TNP_User::' . $status_constant );
 		$newsletter = Newsletter::instance();
 		$user       = $newsletter->get_user( $email );
 		if ( $user && $user->status !== $status ) {
@@ -112,7 +119,7 @@ function my_site_tnp_set_status( string $status ): callable {
 	};
 }
 
-add_action( 'connector_for_sendora_unsubscribed', my_site_tnp_set_status( TNP_User::STATUS_UNSUBSCRIBED ) );
-add_action( 'connector_for_sendora_bounced', my_site_tnp_set_status( TNP_User::STATUS_BOUNCED ) );
-add_action( 'connector_for_sendora_complained', my_site_tnp_set_status( TNP_User::STATUS_COMPLAINED ) );
+add_action( 'connector_for_sendora_unsubscribed', my_site_tnp_set_status( 'STATUS_UNSUBSCRIBED' ) );
+add_action( 'connector_for_sendora_bounced', my_site_tnp_set_status( 'STATUS_BOUNCED' ) );
+add_action( 'connector_for_sendora_complained', my_site_tnp_set_status( 'STATUS_COMPLAINED' ) );
 ```
