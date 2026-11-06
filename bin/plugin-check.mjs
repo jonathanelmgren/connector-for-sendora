@@ -14,6 +14,7 @@ import {
 import { homedir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import {
+	distIgnored,
 	refuseSendoraVariables,
 	root,
 	SLUG,
@@ -35,18 +36,6 @@ const RUNTIME_CHECKS = [
 	'non_blocking_scripts',
 ];
 
-/**
- * Result codes expected for this plugin:
- * - no_plugin_readme: readme.txt is not written yet.
- */
-const IGNORED_CODES = ['no_plugin_readme'];
-
-function distIgnored() {
-	return readFileSync(join(root, '.distignore'), 'utf8')
-		.split('\n')
-		.map((line) => line.trim().replace(/^\/|\/$/g, ''))
-		.filter((line) => line !== '' && !line.startsWith('#'));
-}
 
 function isDirectory(path) {
 	return (
@@ -137,7 +126,6 @@ try {
 		basename(root),
 		`--slug=${SLUG}`,
 		`--exclude-checks=${RUNTIME_CHECKS.join(',')}`,
-		`--ignore-codes=${IGNORED_CODES.join(',')}`,
 		`--exclude-directories=${ignored.filter(isDirectory).join(',')}`,
 		`--exclude-files=${ignored.filter((path) => !isDirectory(path)).join(',')}`,
 		'--format=json',
