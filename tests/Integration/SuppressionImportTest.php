@@ -13,6 +13,7 @@ use ConnectorForSendora\Admin\SuppressionImport;
 use ConnectorForSendora\Admin\SuppressionPage;
 use ConnectorForSendora\Import\Importer;
 use ConnectorForSendora\Suppression\SuppressionList;
+use ConnectorForSendora\Tests\Support\BrokenQueries;
 use ConnectorForSendora\Tests\Support\CsvFiles;
 use ConnectorForSendora\Tests\Support\Redirected;
 use WPDieException;
@@ -29,6 +30,8 @@ final class SuppressionImportTest extends TestCase {
 
 	private CsvFiles $files;
 
+	private BrokenQueries $queries;
+
 	/**
 	 * The paths the screen treats as uploads.
 	 *
@@ -39,12 +42,14 @@ final class SuppressionImportTest extends TestCase {
 	public function set_up(): void {
 		parent::set_up();
 		$this->log_in( 'administrator' );
-		$this->list  = new SuppressionList();
-		$this->files = new CsvFiles();
+		$this->list    = new SuppressionList();
+		$this->files   = new CsvFiles();
+		$this->queries = new BrokenQueries();
 		Redirected::catch();
 	}
 
 	public function tear_down(): void {
+		$this->queries->restore();
 		$this->files->delete_all();
 		$_FILES   = array();
 		$_POST    = array();
@@ -117,6 +122,21 @@ final class SuppressionImportTest extends TestCase {
 
 		$this->assertSame( 0, $this->list->count( '' ) );
 		$this->assertStringContainsString( 'name="' . SuppressionImport::FILE_FIELD . '"', $this->render() );
+	}
+
+	public function test_a_dry_run_the_site_cannot_keep_is_refused_and_no_older_one_shows(): void {
+		$this->upload( "email,status\nanna@example.com,undeliverable\n" );
+		$this->post( SuppressionImport::PREVIEW_ACTION, 'handle_preview' );
+		$path = $this->upload( "email,status\nbo@example.org,undeliverable\n" );
+		$this->queries->refuse( '/^INSERT\b.*_transient_' . preg_quote( SuppressionImport::TRANSIENT_PREFIX, '/' ) . '.*preview/s' );
+
+		$this->post( SuppressionImport::PREVIEW_ACTION, 'handle_preview' );
+		$this->queries->restore();
+
+		$this->assertFileDoesNotExist( $path );
+		$page = $this->render();
+		$this->assertStringContainsString( 'The dry run could not be kept for you to confirm', $page );
+		$this->assertStringNotContainsString( 'Dry run: nothing has been written yet.', $page );
 	}
 
 	public function test_a_file_that_is_not_csv_is_refused_and_deleted(): void {

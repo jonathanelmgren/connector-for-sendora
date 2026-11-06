@@ -57,16 +57,18 @@ final class Importer {
 	 *
 	 * @param string        $path    The CSV file.
 	 * @param ImportOptions $options Which columns and statuses to read.
+	 * @param bool          $details Whether to keep each skipped row as well as the counts.
 	 * @throws ImportFailed The file cannot be read, has no header row, or lacks a column.
 	 */
-	public function plan( string $path, ImportOptions $options ): ImportPlan {
+	public function plan( string $path, ImportOptions $options, bool $details = false ): ImportPlan {
 		[ $file, $start ]         = $this->open( $path );
 		[ $email_at, $status_at ] = $this->columns( $file, $start, $options );
 
 		$rows_read  = 0;
 		$row_number = self::HEADER_ROW;
 		$candidates = array();
-		$skipped    = array();
+		$skipped    = array_fill_keys( ImportPlan::SKIP_REASONS, 0 );
+		$rows       = array();
 		while ( ! $file->eof() ) {
 			$row = $file->fgetcsv();
 			if ( ! is_array( $row ) ) {
@@ -91,15 +93,18 @@ final class Importer {
 				$candidates[ $email ] = true;
 				continue;
 			}
-			$skipped[ $reason ][] = array(
-				'row'   => $row_number,
-				'email' => $email,
-			);
+			++$skipped[ $reason ];
+			if ( $details ) {
+				$rows[ $reason ][] = array(
+					'row'   => $row_number,
+					'email' => $email,
+				);
+			}
 		}
 
 		$candidates = array_map( 'strval', array_keys( $candidates ) );
 		$already    = $this->suppression->listed( $candidates, self::REASON );
-		return new ImportPlan( $rows_read, array_values( array_diff( $candidates, $already ) ), $already, $skipped );
+		return new ImportPlan( $rows_read, array_values( array_diff( $candidates, $already ) ), $already, $skipped, $rows );
 	}
 
 	/**

@@ -13,8 +13,8 @@ namespace ConnectorForSendora\Import;
 
 /**
  * The file cannot be read, has no header row, lacks a column the import
- * needs, or is not an upload the screen takes. Its message is a translated
- * sentence for the person importing.
+ * needs, is not an upload the screen takes, or gives a dry run too large to
+ * keep. Its message is a translated sentence for the person importing.
  */
 final class ImportFailed extends \RuntimeException {
 
@@ -67,6 +67,11 @@ final class ImportFailed extends \RuntimeException {
 				size_format( $limit )
 			)
 		);
+	}
+
+	/** The dry run is too large for the site to keep until it is confirmed. */
+	public static function not_kept(): self {
+		return new self( __( 'The dry run could not be kept for you to confirm: the file is too large for this site\'s storage. Import it with WP-CLI.', 'connector-for-sendora' ) );
 	}
 
 	/** The upload is not a CSV file. */

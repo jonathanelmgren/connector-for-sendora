@@ -91,7 +91,7 @@ final class ImportCommand {
 		$verbose = (bool) WP_CLI\Utils\get_flag_value( $assoc_args, 'verbose', false );
 
 		try {
-			$plan = $this->importer->plan( $args[0], $options );
+			$plan = $this->importer->plan( $args[0], $options, $verbose );
 		} catch ( ImportFailed $e ) {
 			WP_CLI::error( $e->getMessage() );
 			return;
@@ -133,7 +133,7 @@ final class ImportCommand {
 			}
 		}
 		foreach ( ImportPlan::SKIP_REASONS as $reason ) {
-			$rows = $plan->skipped[ $reason ] ?? array();
+			$rows = $plan->skipped_rows[ $reason ] ?? array();
 			if ( array() === $rows ) {
 				continue;
 			}

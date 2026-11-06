@@ -11,8 +11,8 @@ namespace ConnectorForSendora\Import;
 
 /**
  * The outcome of reading a verifier's export against the suppression list:
- * the addresses it would add, those already on the list, and the rows it
- * skips, each with why.
+ * the addresses it would add, those already on the list, and how many rows
+ * it skips for each reason, with the rows themselves when asked for.
  */
 final class ImportPlan {
 
@@ -34,16 +34,18 @@ final class ImportPlan {
 	/**
 	 * A plan.
 	 *
-	 * @param int                                                 $rows_read How many rows the file has under its header, blank rows left out.
-	 * @param list<string>                                        $suppress  The addresses to add, normalised.
-	 * @param list<string>                                        $already   The addresses already on the list, normalised.
-	 * @param array<string, list<array{row: int, email: string}>> $skipped   The rows skipped, by reason; a row's number counts the header as row 1.
+	 * @param int                                                 $rows_read    How many rows the file has under its header, blank rows left out.
+	 * @param list<string>                                        $suppress     The addresses to add, normalised.
+	 * @param list<string>                                        $already      The addresses already on the list, normalised.
+	 * @param array<string, int>                                  $skipped      How many rows were skipped, by reason.
+	 * @param array<string, list<array{row: int, email: string}>> $skipped_rows The rows skipped, by reason, when asked for; a row's number is its CSV record's, the header being 1.
 	 */
 	public function __construct(
 		public readonly int $rows_read,
 		public readonly array $suppress,
 		public readonly array $already,
 		public readonly array $skipped,
+		public readonly array $skipped_rows = array(),
 	) {
 	}
 
@@ -55,7 +57,7 @@ final class ImportPlan {
 	public function skipped_counts(): array {
 		$counts = array();
 		foreach ( self::SKIP_REASONS as $reason ) {
-			$counts[ $reason ] = count( $this->skipped[ $reason ] ?? array() );
+			$counts[ $reason ] = (int) ( $this->skipped[ $reason ] ?? 0 );
 		}
 		return $counts;
 	}

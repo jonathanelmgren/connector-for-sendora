@@ -176,15 +176,19 @@ final class ImporterTest extends TestCase {
 	}
 
 	public function test_rows_without_a_valid_address_or_repeated_are_skipped_with_why(): void {
-		$plan = $this->plan(
-			array(
-				'email,status',
-				',undeliverable',
-				'not-an-address,undeliverable',
-				'anna@example.com,undeliverable',
-				'ANNA@example.com,invalid',
-				'bo@example.org',
-			)
+		$plan = $this->importer->plan(
+			$this->files->lines(
+				array(
+					'email,status',
+					',undeliverable',
+					'not-an-address,undeliverable',
+					'anna@example.com,undeliverable',
+					'ANNA@example.com,invalid',
+					'bo@example.org',
+				)
+			),
+			new ImportOptions(),
+			true
 		);
 
 		$this->assertSame( 5, $plan->rows_read );
@@ -203,15 +207,23 @@ final class ImporterTest extends TestCase {
 				'row'   => 3,
 				'email' => 'not-an-address',
 			),
-			$plan->skipped[ ImportPlan::SKIP_INVALID_ADDRESS ][0]
+			$plan->skipped_rows[ ImportPlan::SKIP_INVALID_ADDRESS ][0]
 		);
 	}
 
+	public function test_skipped_rows_are_only_counted_unless_asked_for(): void {
+		$plan = $this->plan( array( 'email,status', 'not-an-address,undeliverable', 'bo@example.org,valid' ) );
+
+		$this->assertSame( 1, $plan->skipped_counts()[ ImportPlan::SKIP_INVALID_ADDRESS ] );
+		$this->assertSame( 1, $plan->skipped_counts()[ ImportPlan::SKIP_STATUS ] );
+		$this->assertSame( array(), $plan->skipped_rows );
+	}
+
 	public function test_a_row_number_counts_blank_records(): void {
-		$plan = $this->plan( array( 'email,status', '', 'not-an-address,invalid' ) );
+		$plan = $this->importer->plan( $this->files->lines( array( 'email,status', '', 'not-an-address,invalid' ) ), new ImportOptions(), true );
 
 		$this->assertSame( 1, $plan->rows_read );
-		$this->assertSame( 3, $plan->skipped[ ImportPlan::SKIP_INVALID_ADDRESS ][0]['row'] );
+		$this->assertSame( 3, $plan->skipped_rows[ ImportPlan::SKIP_INVALID_ADDRESS ][0]['row'] );
 	}
 
 	public function test_the_summary_gives_counts_and_no_address(): void {

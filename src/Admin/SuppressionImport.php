@@ -114,7 +114,7 @@ final class SuppressionImport {
 			);
 			// phpcs:enable WordPress.Security.NonceVerification.Missing
 			$plan = $this->importer->plan( (string) $path, $options );
-			$this->save(
+			$kept = $this->save(
 				array(
 					'state' => self::STATE_PREVIEW,
 					'token' => wp_generate_password( 20, false ),
@@ -122,17 +122,15 @@ final class SuppressionImport {
 						'rows_read' => $plan->rows_read,
 						'suppress'  => $plan->suppress,
 						'already'   => $plan->already,
-						'skipped'   => $plan->skipped,
+						'skipped'   => $plan->skipped_counts(),
 					),
 				)
 			);
+			if ( ! $kept ) {
+				$this->save_error( ImportFailed::not_kept()->getMessage() );
+			}
 		} catch ( ImportFailed $e ) {
-			$this->save(
-				array(
-					'state'   => self::STATE_ERROR,
-					'message' => $e->getMessage(),
-				)
-			);
+			$this->save_error( $e->getMessage() );
 		} finally {
 			if ( null !== $path && ( $this->is_upload )( $path ) ) {
 				wp_delete_file( $path );
@@ -149,12 +147,7 @@ final class SuppressionImport {
 		$token = isset( $_POST[ self::TOKEN_FIELD ] ) ? sanitize_text_field( wp_unslash( $_POST[ self::TOKEN_FIELD ] ) ) : '';
 		$saved = $this->saved();
 		if ( null === $saved || self::STATE_PREVIEW !== $saved['state'] || ! hash_equals( (string) $saved['token'], $token ) ) {
-			$this->save(
-				array(
-					'state'   => self::STATE_ERROR,
-					'message' => __( 'That import has expired or was already done. Upload the file again.', 'connector-for-sendora' ),
-				)
-			);
+			$this->save_error( __( 'That import has expired or was already done. Upload the file again.', 'connector-for-sendora' ) );
 			$this->back();
 		}
 
@@ -321,18 +314,35 @@ final class SuppressionImport {
 		/**
 		 * The fields as {@see self::handle_preview()} stored them.
 		 *
-		 * @var array{rows_read?: int, suppress?: list<string>, already?: list<string>, skipped?: array<string, list<array{row: int, email: string}>>} $stored
+		 * @var array{rows_read?: int, suppress?: list<string>, already?: list<string>, skipped?: array<string, int>} $stored
 		 */
 		return new ImportPlan( (int) ( $stored['rows_read'] ?? 0 ), $stored['suppress'] ?? array(), $stored['already'] ?? array(), $stored['skipped'] ?? array() );
 	}
 
 	/**
-	 * Keeps the user's import.
+	 * Keeps the user's import in place of the one before, which is dropped
+	 * even when the new one cannot be kept.
 	 *
 	 * @param array<string, mixed> $state The import.
+	 * @return bool Whether it was kept.
 	 */
-	private function save( array $state ): void {
-		set_transient( self::transient(), $state, self::LIFETIME );
+	private function save( array $state ): bool {
+		delete_transient( self::transient() );
+		return set_transient( self::transient(), $state, self::LIFETIME );
+	}
+
+	/**
+	 * Keeps a refusal, to report once.
+	 *
+	 * @param string $message Why, as a sentence for the person importing.
+	 */
+	private function save_error( string $message ): void {
+		$this->save(
+			array(
+				'state'   => self::STATE_ERROR,
+				'message' => $message,
+			)
+		);
 	}
 
 	/**
