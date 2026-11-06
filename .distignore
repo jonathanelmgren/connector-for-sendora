@@ -1,0 +1,18 @@
+# Development files, left out of a release and of Plugin Check.
+.git
+.github
+.distignore
+.gitignore
+.wp-env.json
+.wp-env.override.json
+bin
+node_modules
+tests
+README.md
+composer.json
+composer.lock
+package.json
+package-lock.json
+phpcs.xml.dist
+phpstan.neon.dist
+phpunit.xml.dist

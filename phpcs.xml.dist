@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<ruleset name="Connector for Sendora">
+	<description>WordPress Coding Standards for the plugin.</description>
+
+	<file>.</file>
+	<exclude-pattern>/vendor/*</exclude-pattern>
+	<exclude-pattern>/node_modules/*</exclude-pattern>
+	<!-- Development scripts, never shipped. -->
+	<exclude-pattern>/bin/*</exclude-pattern>
+
+	<arg name="extensions" value="php"/>
+	<arg name="colors"/>
+	<arg value="sp"/>
+	<arg name="parallel" value="4"/>
+
+	<config name="testVersion" value="8.2-"/>
+	<config name="minimum_wp_version" value="6.7"/>
+
+	<rule ref="WordPress">
+		<!-- It compares generic doc types such as list<Address> with the native "array", and always fails. -->
+		<exclude name="Squiz.Commenting.FunctionComment.IncorrectTypeHint"/>
+	</rule>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="connector-for-sendora"/>
+			</property>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="connector_for_sendora"/>
+				<element value="ConnectorForSendora"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!-- Classes are PSR-4 autoloaded: one class per file, named after the class. -->
+	<rule ref="WordPress.Files.FileName">
+		<exclude-pattern>/src/*</exclude-pattern>
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+
+	<!-- Tests name their methods test_*, as the WordPress test suite does; PHPUnit's own methods are camelCase. -->
+	<rule ref="WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+	<!-- A test's name says what it checks. -->
+	<rule ref="Squiz.Commenting.FunctionComment.Missing">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="Squiz.Commenting.VariableComment.Missing">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+
+	<!-- PSR-18 and PSR-17 name their methods in camelCase. -->
+	<rule ref="WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid">
+		<exclude-pattern>/src/Sendora/WordPressHttpClient.php</exclude-pattern>
+		<exclude-pattern>/src/Sendora/NetworkFailed.php</exclude-pattern>
+	</rule>
+</ruleset>

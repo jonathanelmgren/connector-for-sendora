@@ -1,0 +1,13 @@
+parameters:
+	level: 8
+	phpVersion: 80200
+	paths:
+		- connector-for-sendora.php
+		- src
+		- tests
+	excludePaths:
+		- tests/mu-plugins
+	bootstrapFiles:
+		- tests/phpstan-bootstrap.php
+	scanDirectories:
+		- vendor/wp-phpunit/wp-phpunit
