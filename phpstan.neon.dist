@@ -3,6 +3,8 @@ parameters:
 	phpVersion: 80200
 	paths:
 		- connector-for-sendora.php
+		- requirements.php
+		- uninstall.php
 		- src
 		- tests
 	excludePaths:

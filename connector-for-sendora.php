@@ -26,11 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'CONNECTOR_FOR_SENDORA_FILE', __FILE__ );
 define( 'CONNECTOR_FOR_SENDORA_VERSION', '0.1.0' );
 
-/** The PHP version the plugin and Sendora's SDK need. */
-define( 'CONNECTOR_FOR_SENDORA_MIN_PHP', '8.2' );
-
-/** The oldest WordPress the plugin supports. */
-define( 'CONNECTOR_FOR_SENDORA_MIN_WP', '6.7' );
+require_once __DIR__ . '/requirements.php';
 
 /**
  * What keeps the plugin from running here, as sentences for an admin, or an
