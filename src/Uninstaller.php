@@ -64,8 +64,8 @@ final class Uninstaller {
 		global $wpdb;
 
 		foreach ( array( SuppressionList::table(), DeliveryLog::table() ) as $table ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- drops the plugin's own tables on uninstall; a table name cannot be a placeholder.
-			$wpdb->query( "DROP TABLE IF EXISTS `{$table}`" );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange -- drops the plugin's own tables on uninstall.
+			$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $table ) );
 		}
 
 		foreach ( self::OPTIONS as $option ) {
