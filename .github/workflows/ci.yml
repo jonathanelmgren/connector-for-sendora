@@ -36,3 +36,33 @@ jobs:
       # to a host other than this machine.
       - name: Check
         run: npm run check
+
+  build:
+    name: Build the release zip and the translation template
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Composer dependencies
+        run: npm run composer -- install --no-interaction --no-progress
+
+      # The zip a release would attach, with languages/connector-for-sendora.pot in it.
+      - name: Build
+        run: npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: connector-for-sendora
+          path: |
+            build/connector-for-sendora.zip
+            build/connector-for-sendora/languages/connector-for-sendora.pot
+          if-no-files-found: error

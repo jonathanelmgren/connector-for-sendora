@@ -86,6 +86,14 @@ For other plugins, such as a newsletter keeping its subscribers in step:
 - `connector_for_sendora_event` fires for every verified event, with its type (`'delivered'`, `'bounced'`, …) and its payload as Sendora sent it;
 - `connector_for_sendora_bounced` (hard bounces only), `connector_for_sendora_complained` and `connector_for_sendora_unsubscribed` fire with the address in lower case and the payload, once the address is on the list.
 
+### Newsletter plugins
+
+The plugin ships no code for a newsletter plugin. Recipes show how to send a newsletter plugin's messages on the broadcast stream, put Sendora's unsubscribe link in its template, and keep its subscribers in step through the actions above: [The Newsletter Plugin](docs/recipes/newsletter.md), [FluentCRM](docs/recipes/fluentcrm.md) and [MailPoet](docs/recipes/mailpoet.md) (whose newsletters never go through `wp_mail()`).
+
+### Uninstalling
+
+Deleting the plugin (not deactivating it) drops its two tables and deletes its settings, its schema version and its transients, on every site of a network.
+
 ### Other filters
 
 The filter `connector_for_sendora_transport` can return a `ConnectorForSendora\Mail\Transport` to send through something other than Sendora's API.
@@ -105,6 +113,18 @@ npm run env:stop
 Single steps: `npm run lint` (PHPCS with WordPress Coding Standards; `npm run format` fixes what it can), `npm run stan` (PHPStan), `npm test` (PHPUnit; `npm test -- --filter MailerTest` for one test class), `npm run plugin-check`.
 
 Set `WP_ENV_PORT` and `WP_ENV_TESTS_PORT` to run several checkouts at once.
+
+### Building and releasing
+
+```sh
+npm run make-pot              # languages/connector-for-sendora.pot from the working tree
+npm run build                 # build/connector-for-sendora/ and build/connector-for-sendora.zip
+node bin/build.mjs v1.2.3     # the same, refusing unless the plugin's files say 1.2.3
+```
+
+The build holds the files git knows less those in `.distignore`, production packages only with Sendora's SDK and its dependencies prefixed under `ConnectorForSendora\Vendor`, and the translation template. It refuses to build when the version in the plugin header, `CONNECTOR_FOR_SENDORA_VERSION`, `readme.txt`'s stable tag and `package.json` differ. CI builds the zip and the template on every pull request.
+
+To release, raise the version in those four places and add a changelog entry to `readme.txt`, merge, then push a tag `v<version>`. The release workflow builds the zip and attaches it to a GitHub release. It also deploys to the wordpress.org plugin directory when the repository variable `WPORG_DEPLOY` is `true` and the secrets `SVN_USERNAME` and `SVN_PASSWORD` are set (in the `wordpress.org` environment or the repository); banners, icons and screenshots for the directory go in `.wordpress-org/`.
 
 ### No test reaches Sendora
 

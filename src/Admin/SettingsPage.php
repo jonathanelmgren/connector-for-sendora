@@ -34,7 +34,7 @@ final class SettingsPage {
 	private const GROUP = 'connector_for_sendora';
 
 	/** The capability the page and the test email need. */
-	private const CAPABILITY = 'manage_options';
+	public const CAPABILITY = 'manage_options';
 
 	/** The admin-post action that sends the test email. */
 	public const TEST_ACTION = 'connector_for_sendora_test_email';
@@ -56,6 +56,9 @@ final class SettingsPage {
 
 	/** How long a test email's result waits to be shown, in seconds. */
 	private const TEST_RESULT_TTL = 60;
+
+	/** The transient holding a user's test result, followed by the user's id. */
+	public const TEST_RESULT_PREFIX = 'connector_for_sendora_test_';
 
 	/**
 	 * A page.
@@ -442,6 +445,6 @@ final class SettingsPage {
 
 	/** Where the current user's last test result waits. */
 	private static function test_result_key(): string {
-		return 'connector_for_sendora_test_' . get_current_user_id();
+		return self::TEST_RESULT_PREFIX . get_current_user_id();
 	}
 }

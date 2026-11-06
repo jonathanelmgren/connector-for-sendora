@@ -3,6 +3,7 @@
 // container. wp-env reads its ports from WP_ENV_PORT and WP_ENV_TESTS_PORT
 // itself, so several checkouts can run side by side.
 import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -113,9 +114,9 @@ function dockerIsRootless() {
  * gets no network beyond what Composer needs, and none of the host's
  * environment.
  *
- * @param {{ network?: boolean }} [options] network: false cuts the container off, for tools that need none
+ * @param {{ network?: boolean, cwd?: string }} [options] network: false cuts the container off, for tools that need none; cwd: the directory to work in, relative to the checkout
  */
-export function inComposerContainer({ network = true } = {}) {
+export function inComposerContainer({ network = true, cwd = '' } = {}) {
 	const user =
 		dockerIsRootless() || process.getuid === undefined
 			? []
@@ -128,9 +129,20 @@ export function inComposerContainer({ network = true } = {}) {
 		'-v',
 		`${root}:/app`,
 		'-w',
-		'/app',
+		cwd === '' ? '/app' : `/app/${cwd}`,
 		'-e',
 		'COMPOSER_HOME=/tmp/composer',
 		COMPOSER_IMAGE,
 	];
+}
+
+/**
+ * The paths in .distignore, relative to the checkout, without leading or
+ * trailing slashes: the development files a release leaves out.
+ */
+export function distIgnored() {
+	return readFileSync(join(root, '.distignore'), 'utf8')
+		.split('\n')
+		.map((line) => line.trim().replace(/^\/|\/$/g, ''))
+		.filter((line) => line !== '' && !line.startsWith('#'));
 }

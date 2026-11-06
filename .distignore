@@ -9,10 +9,12 @@ bin
 node_modules
 tests
 README.md
-composer.json
 composer.lock
 package.json
 package-lock.json
 phpcs.xml.dist
 phpstan.neon.dist
 phpunit.xml.dist
+.wordpress-org
+build
+docs

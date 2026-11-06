@@ -18,6 +18,8 @@
 		"stan": "node bin/php.mjs php -d memory_limit=1G vendor/bin/phpstan analyse --no-progress",
 		"test": "node bin/test.mjs",
 		"plugin-check": "node bin/plugin-check.mjs",
+		"make-pot": "node bin/make-pot.mjs",
+		"build": "node bin/build.mjs",
 		"check": "node bin/check.mjs"
 	},
 	"devDependencies": {
