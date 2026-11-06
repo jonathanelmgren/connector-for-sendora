@@ -118,6 +118,29 @@ final class ImporterTest extends TestCase {
 		$this->assertSame( SuppressionList::SOURCE_WEBHOOK, $this->list->find( 'anna@example.com', 1, 0 )[0]['source'] );
 	}
 
+	public function test_an_address_added_while_the_import_writes_is_reported_as_already_listed(): void {
+		$plan   = $this->plan( array( 'email,status', 'anna@example.com,undeliverable', 'bo@example.org,undeliverable' ) );
+		$insert = 'INSERT INTO `' . SuppressionList::table() . '`';
+		$raced  = false;
+		$race   = function ( string $query ) use ( $insert, &$raced ): string {
+			if ( ! $raced && str_starts_with( $query, $insert ) ) {
+				$raced = true;
+				$this->list->add( 'anna@example.com', SuppressionList::BOUNCED, SuppressionList::SOURCE_WEBHOOK, 'str_1' );
+			}
+			return $query;
+		};
+		add_filter( 'query', $race );
+
+		$result = $this->importer->apply( $plan->suppress );
+		remove_filter( 'query', $race );
+
+		$this->assertSame( array( 'bo@example.org' ), $result['suppressed'] );
+		$this->assertSame( array( 'anna@example.com' ), $result['already'] );
+		$row = $this->list->find( 'anna@example.com', 1, 0 )[0];
+		$this->assertSame( SuppressionList::SOURCE_WEBHOOK, $row['source'] );
+		$this->assertSame( 'str_1', $row['stream_id'] );
+	}
+
 	/**
 	 * Header rows as verifiers and spreadsheets write them.
 	 *

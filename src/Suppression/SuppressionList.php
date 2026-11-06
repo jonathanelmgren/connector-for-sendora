@@ -186,9 +186,46 @@ final class SuppressionList {
 			if ( false === $written ) {
 				throw QueryFailed::last( 'Adding to the suppression list' );
 			}
+			// An existing row counts as no row written, so fewer rows mean some were added meanwhile.
+			if ( count( $new ) !== $written ) {
+				$new = $this->written( $new, $reason, $source, $when );
+			}
 			array_push( $added, ...$new );
 		}
 		return $added;
+	}
+
+	/**
+	 * Of these addresses, the ones whose row for the reason has this source
+	 * and time: the rows one {@see self::add_new()} wrote.
+	 *
+	 * @param list<string> $emails The addresses, normalised.
+	 * @param string       $reason One of {@see self::REASONS}.
+	 * @param string       $source One of {@see self::SOURCES}.
+	 * @param string       $when   The time written, as the table has it.
+	 * @return list<string>
+	 * @throws QueryFailed The database refused the lookup.
+	 */
+	private function written( array $emails, string $reason, string $source, string $when ): array {
+		global $wpdb;
+		$hashes = array_map( array( Schema::class, 'hash' ), $emails );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- the plugin's own table; nothing caches it.
+		$found = $wpdb->get_col(
+			// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- the hashes are spread in.
+			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- one %s per hash, filled in below.
+				'SELECT email FROM %i WHERE reason = %s AND source = %s AND suppressed_at = %s AND email_hash IN (' . implode( ', ', array_fill( 0, count( $hashes ), '%s' ) ) . ')',
+				self::table(),
+				$reason,
+				$source,
+				$when,
+				...$hashes
+			)
+		);
+		if ( '' !== $wpdb->last_error ) {
+			throw QueryFailed::last( 'Looking up the suppression list' );
+		}
+		return array_values( array_intersect( $emails, array_map( 'strval', $found ) ) );
 	}
 
 	/**
