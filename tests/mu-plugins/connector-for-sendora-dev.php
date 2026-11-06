@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Connector for Sendora — local fake
- * Description: On a wp-env site, sends through an in-memory fake instead of Sendora, and refuses every request to Sendora's hosts.
+ * Description: On a wp-env site, sends through an in-memory fake instead of Sendora, and refuses every request and redirect to Sendora's hosts.
  *
  * @package ConnectorForSendora
  */
@@ -31,15 +31,43 @@ add_filter(
 	PHP_INT_MAX
 );
 
+/** Sendora's domain; it and every host under it are refused. */
+const CONNECTOR_FOR_SENDORA_DEV_SENDORA_DOMAIN = 'sendora.se';
+
+/** Why a request to Sendora was refused. */
+const CONNECTOR_FOR_SENDORA_DEV_BLOCKED_MESSAGE = 'A local site never reaches Sendora.';
+
+/** The error code of a refused request. */
+const CONNECTOR_FOR_SENDORA_DEV_BLOCKED = 'connector_for_sendora_dev_blocked';
+
+/**
+ * Whether the address is one of Sendora's hosts.
+ *
+ * @param string $url An address.
+ */
+function connector_for_sendora_dev_is_sendora( string $url ): bool {
+	$host = (string) wp_parse_url( $url, PHP_URL_HOST );
+	return CONNECTOR_FOR_SENDORA_DEV_SENDORA_DOMAIN === $host || str_ends_with( $host, '.' . CONNECTOR_FOR_SENDORA_DEV_SENDORA_DOMAIN );
+}
+
 add_filter(
 	'pre_http_request',
 	static function ( $response, $args, $url ) {
-		$host = (string) wp_parse_url( (string) $url, PHP_URL_HOST );
-		if ( 'sendora.se' === $host || str_ends_with( $host, '.sendora.se' ) ) {
-			return new WP_Error( 'connector_for_sendora_dev_blocked', 'A local site never reaches Sendora.' );
+		if ( connector_for_sendora_dev_is_sendora( (string) $url ) ) {
+			return new WP_Error( CONNECTOR_FOR_SENDORA_DEV_BLOCKED, CONNECTOR_FOR_SENDORA_DEV_BLOCKED_MESSAGE );
 		}
 		return $response;
 	},
 	PHP_INT_MAX,
 	3
+);
+
+// WordPress follows a redirect without passing through pre_http_request again.
+add_action(
+	'requests-requests.before_redirect', // phpcs:ignore WordPress.NamingConventions.ValidHookName.UseUnderscores -- Requests' hook, as WordPress passes it on.
+	static function ( $location ): void {
+		if ( connector_for_sendora_dev_is_sendora( (string) $location ) ) {
+			throw new \WpOrg\Requests\Exception( CONNECTOR_FOR_SENDORA_DEV_BLOCKED_MESSAGE, CONNECTOR_FOR_SENDORA_DEV_BLOCKED ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is.
+		}
+	}
 );

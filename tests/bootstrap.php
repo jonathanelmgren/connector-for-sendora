@@ -1,8 +1,8 @@
 <?php
 /**
  * PHPUnit bootstrap: the WordPress test suite with the plugin loaded, no
- * Sendora key anywhere, and every request to a host other than this machine
- * refused.
+ * Sendora key anywhere, and every request or redirect to a host other than
+ * this machine refused.
  *
  * @package ConnectorForSendora
  */
@@ -61,5 +61,6 @@ tests_add_filter(
 );
 
 tests_add_filter( 'pre_http_request', array( SendoraGuard::class, 'block_request' ), PHP_INT_MAX, 3 );
+tests_add_filter( SendoraGuard::REDIRECT_HOOK, array( SendoraGuard::class, 'block_redirect' ) );
 
 require_once $connector_for_sendora_tests_dir . '/includes/bootstrap.php';

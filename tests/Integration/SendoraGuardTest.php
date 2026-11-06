@@ -11,6 +11,7 @@ namespace ConnectorForSendora\Tests\Integration;
 
 use ConnectorForSendora\Tests\Support\SendoraGuard;
 use WP_Error;
+use WpOrg\Requests\Exception as RequestsException;
 
 /**
  * The guards that keep a Sendora key and Sendora's hosts out of every run.
@@ -64,5 +65,32 @@ final class SendoraGuardTest extends TestCase {
 		$answer = array( 'body' => 'fake' );
 
 		$this->assertSame( $answer, SendoraGuard::block_request( $answer, array(), 'https://api.sendora.se/' ) );
+	}
+
+	public function test_a_redirect_to_a_remote_host_is_refused(): void {
+		$this->expectException( RequestsException::class );
+
+		self::follow_redirect( 'https://api.sendora.se/v1/email' );
+	}
+
+	public function test_a_redirect_to_this_machine_is_let_through(): void {
+		$this->assertNotFalse( has_action( SendoraGuard::REDIRECT_HOOK, array( SendoraGuard::class, 'block_redirect' ) ) );
+
+		self::follow_redirect( 'http://localhost:8080/next' );
+		self::follow_redirect( 'http://[::1]/next' );
+	}
+
+	/**
+	 * Fires the action WordPress fires before following a redirect, with
+	 * the arguments it passes.
+	 *
+	 * @param string $location Where the redirect goes.
+	 */
+	private static function follow_redirect( string $location ): void {
+		$headers = array();
+		$data    = array();
+		$options = array();
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- WordPress's own hook, as it fires it.
+		do_action_ref_array( SendoraGuard::REDIRECT_HOOK, array( &$location, &$headers, &$data, &$options, null ) );
 	}
 }

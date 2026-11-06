@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace ConnectorForSendora\Tests\Support;
 
 use WP_Error;
+use WpOrg\Requests\Exception as RequestsException;
 
 /**
  * The test suite's two guards. The bootstrap refuses to start when a
@@ -17,6 +18,10 @@ use WP_Error;
  * `pre_http_request` filter refuses every request to a host that is not
  * this machine before it leaves. A test may still answer a request itself
  * with its own filter, which runs first: nothing leaves either way.
+ *
+ * WordPress follows redirects without passing through `pre_http_request`
+ * again, so a redirect from this machine to another host is refused on
+ * {@see REDIRECT_HOOK} as well.
  */
 final class SendoraGuard {
 
@@ -41,6 +46,12 @@ final class SendoraGuard {
 
 	/** The error code of a refused request. */
 	public const BLOCKED = 'connector_for_sendora_test_host_blocked';
+
+	/**
+	 * The action WordPress fires before it follows a redirect: Requests'
+	 * `requests.before_redirect` hook, as WP_Requests_Hooks passes it on.
+	 */
+	public const REDIRECT_HOOK = 'requests-requests.before_redirect';
 
 	/**
 	 * What makes this run unsafe, one sentence each; empty when nothing
@@ -88,13 +99,33 @@ final class SendoraGuard {
 	 * @return false|array<string, mixed>|WP_Error
 	 */
 	public static function block_request( $response, $args, $url ) {
-		if ( false !== $response ) {
-			return $response;
-		}
-		$host = wp_parse_url( (string) $url, PHP_URL_HOST );
-		if ( is_string( $host ) && in_array( trim( $host, '[]' ), self::ALLOWED_HOSTS, true ) ) {
+		if ( false !== $response || self::allows( (string) $url ) ) {
 			return $response;
 		}
 		return new WP_Error( self::BLOCKED, sprintf( 'Tests may not reach %s.', $url ) );
+	}
+
+	/**
+	 * The {@see REDIRECT_HOOK} action: refuses a redirect to any host but
+	 * this machine. WordPress answers the request with a WP_Error holding
+	 * the exception's message.
+	 *
+	 * @param mixed $location Where the redirect goes.
+	 * @throws RequestsException The redirect leaves this machine.
+	 */
+	public static function block_redirect( $location ): void {
+		if ( ! self::allows( (string) $location ) ) {
+			throw new RequestsException( sprintf( 'Tests may not be redirected to %s.', $location ), self::BLOCKED ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is.
+		}
+	}
+
+	/**
+	 * Whether a test may reach the address: only when it is this machine.
+	 *
+	 * @param string $url An address.
+	 */
+	private static function allows( string $url ): bool {
+		$host = wp_parse_url( $url, PHP_URL_HOST );
+		return is_string( $host ) && in_array( trim( $host, '[]' ), self::ALLOWED_HOSTS, true );
 	}
 }
