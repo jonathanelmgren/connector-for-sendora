@@ -81,6 +81,38 @@ final class Message {
 	}
 
 	/**
+	 * This message with another HTML part.
+	 *
+	 * @param string $html The HTML part.
+	 */
+	public function with_html( string $html ): self {
+		return $this->copy( html: $html );
+	}
+
+	/**
+	 * This message on the stream of another: its stream id, and whether it
+	 * is a broadcast.
+	 *
+	 * @param Message $other The message whose stream this one takes.
+	 */
+	public function on_stream_of( Message $other ): self {
+		return new self(
+			from: $this->from,
+			to: $this->to,
+			subject: $this->subject,
+			text: $this->text,
+			html: $this->html,
+			cc: $this->cc,
+			bcc: $this->bcc,
+			reply_to: $this->reply_to,
+			headers: $this->headers,
+			attachments: $this->attachments,
+			stream_id: $other->stream_id,
+			broadcast: $other->broadcast,
+		);
+	}
+
+	/**
 	 * This message with other headers.
 	 *
 	 * @param array<string,string> $headers Headers by name.
@@ -116,15 +148,16 @@ final class Message {
 	 * @param list<Address>|null        $cc      Copied recipients.
 	 * @param list<Address>|null        $bcc     Blind-copied recipients.
 	 * @param string|null               $text    The plain-text part.
+	 * @param string|null               $html    The HTML part.
 	 * @param array<string,string>|null $headers Other headers by name.
 	 */
-	private function copy( ?array $to = null, ?array $cc = null, ?array $bcc = null, ?string $text = null, ?array $headers = null ): self {
+	private function copy( ?array $to = null, ?array $cc = null, ?array $bcc = null, ?string $text = null, ?string $html = null, ?array $headers = null ): self {
 		return new self(
 			from: $this->from,
 			to: $to ?? $this->to,
 			subject: $this->subject,
 			text: $text ?? $this->text,
-			html: $this->html,
+			html: $html ?? $this->html,
 			cc: $cc ?? $this->cc,
 			bcc: $bcc ?? $this->bcc,
 			reply_to: $this->reply_to,

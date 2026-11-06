@@ -37,6 +37,25 @@ final class HtmlToTextTest extends TestCase {
 		);
 	}
 
+	public function test_an_unquoted_address_is_kept(): void {
+		$this->assertSame( 'Unsubscribe ({{unsubscribe_url}})', HtmlToText::convert( '<a href={{unsubscribe_url}}>Unsubscribe</a>' ) );
+	}
+
+	public function test_only_the_href_attribute_is_the_address(): void {
+		$this->assertSame(
+			'Unsubscribe ({{ unsubscribe_url }})',
+			HtmlToText::convert( '<a data-href="https://example.com/original" title="href=x" href="{{ unsubscribe_url }}">Unsubscribe</a>' )
+		);
+	}
+
+	public function test_a_link_without_an_address_is_its_label(): void {
+		$this->assertSame( 'Top', HtmlToText::convert( '<a name="top">Top</a>' ) );
+	}
+
+	public function test_an_address_with_encoded_characters_is_decoded_once(): void {
+		$this->assertSame( 'Shop (https://example.com/?q=a&amp;b)', HtmlToText::convert( '<a href="https://example.com/?q=a&amp;amp;b">Shop</a>' ) );
+	}
+
 	public function test_a_link_whose_label_is_its_address_is_written_once(): void {
 		$this->assertSame(
 			'https://example.com and anna@example.com',

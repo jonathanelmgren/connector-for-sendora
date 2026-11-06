@@ -20,7 +20,7 @@ Settings saved on the page are kept in the option `connector_for_sendora_setting
 
 A sent message fires `wp_mail_succeeded` with the message's data and `sendora_message_ids`, the ids Sendora gave it: one, or one per recipient for a broadcast or a message with only Bcc recipients, which go to each recipient alone.
 
-A failed send makes `wp_mail()` return false and fires `wp_mail_failed` with a `WP_Error` whose data adds `sendora_error_code` and `sendora_status` to the message's data.
+A failed send makes `wp_mail()` return false and fires `wp_mail_failed` with a `WP_Error` whose data adds `sendora_error_code` and `sendora_status` to the message's data. A message sent as several that fails part way also adds `sendora_message_ids` and `sendora_sent_to`: the ids and addresses of the sends that went out before the failure.
 
 ### Transactional mail and broadcasts
 
@@ -31,7 +31,7 @@ Every message goes on the transactional stream unless something asks for the bro
 
 Any other value means transactional. Sendora's rules for a broadcast are enforced before it is sent:
 
-- The filter `connector_for_sendora_broadcast_message` gets the `ConnectorForSendora\Mail\Message` and the `wp_mail()` arguments first, and returns the message to send, for instance with `{{ unsubscribe_url }}` in place of its own unsubscribe link.
+- The filter `connector_for_sendora_broadcast_message` gets the `ConnectorForSendora\Mail\Message` and the `wp_mail()` arguments first, and returns the message to send, for instance with `{{ unsubscribe_url }}` in place of its own unsubscribe link (`$message->with_text()`, `$message->with_html()`). The message stays on the broadcast stream whatever the returned one says.
 - An HTML-only message gets a text part written from its HTML, in which a link keeps its address: `<a href="{{ unsubscribe_url }}">Unsubscribe</a>` becomes `Unsubscribe ({{ unsubscribe_url }})`.
 - A text or HTML part without `{{ unsubscribe_url }}` is refused. Sendora puts each recipient's own unsubscribe link there.
 - `List-Unsubscribe` and `List-Unsubscribe-Post` headers are removed: Sendora sets them.

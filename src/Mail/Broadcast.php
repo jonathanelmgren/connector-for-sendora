@@ -55,7 +55,8 @@ final class Broadcast {
 		 * checked: return the message as it should be sent, for instance with
 		 * `{{ unsubscribe_url }}` in place of an unsubscribe link of your own.
 		 * Anything other than a `ConnectorForSendora\Mail\Message` keeps the
-		 * message as it was.
+		 * message as it was. The message stays on the broadcast stream
+		 * whatever stream the returned one names.
 		 *
 		 * @param Message              $message The message.
 		 * @param array<string, mixed> $atts    wp_mail()'s arguments: to, subject, message, headers, attachments.
@@ -67,7 +68,8 @@ final class Broadcast {
 		 */
 		$filtered = apply_filters( self::MESSAGE_FILTER, $message, $atts ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- the constant is connector_for_sendora_broadcast_message.
 		if ( $filtered instanceof Message ) {
-			$message = $filtered;
+			// The filter rewrites the content; the stream stays the one chosen, so a broadcast never leaves as transactional mail.
+			$message = $filtered->on_stream_of( $message );
 		}
 
 		if ( null === $message->text && null !== $message->html ) {

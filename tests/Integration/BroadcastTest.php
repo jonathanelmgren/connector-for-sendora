@@ -13,6 +13,7 @@ use ConnectorForSendora\Mail\Address;
 use ConnectorForSendora\Mail\Broadcast;
 use ConnectorForSendora\Mail\Message;
 use ConnectorForSendora\Mail\MessageBuilder;
+use ConnectorForSendora\Mail\SendFailed;
 use ConnectorForSendora\Mail\Stream;
 use ConnectorForSendora\Settings\Settings;
 use WP_Error;
@@ -25,6 +26,9 @@ final class BroadcastTest extends TestCase {
 	private const TRANSACTIONAL_STREAM = 'str_transactional';
 
 	private const BROADCAST_STREAM = 'str_broadcast';
+
+	/** An HTTP status Sendora answers a refused body with. */
+	private const STATUS_UNPROCESSABLE = 422;
 
 	private const HEADER_BROADCAST = 'X-Sendora-Stream: broadcast';
 
@@ -261,6 +265,47 @@ final class BroadcastTest extends TestCase {
 
 		$this->assertSame( array( 'News' ), $seen );
 		$this->assertSame( 'Unsubscribe: {{ unsubscribe_url }}', $this->transport->sent[0]->text );
+	}
+
+	public function test_a_message_the_broadcast_filter_returns_stays_on_the_broadcast_stream(): void {
+		add_filter(
+			Broadcast::MESSAGE_FILTER,
+			static fn ( Message $message ): Message => new Message(
+				from: $message->from,
+				to: $message->to,
+				subject: $message->subject,
+				text: self::TEXT_WITH_LINK,
+				html: self::HTML_WITH_LINK,
+			)
+		);
+
+		$this->assertTrue( wp_mail( 'anna@example.com', 'News', self::TEXT_WITH_LINK, self::HEADER_BROADCAST ) );
+
+		$message = $this->transport->sent[0];
+		$this->assertSame( self::BROADCAST_STREAM, $message->stream_id );
+		$this->assertTrue( $message->broadcast );
+		$this->assertSame( self::HTML_WITH_LINK, $message->html );
+	}
+
+	public function test_the_broadcast_filter_can_rewrite_the_html_part(): void {
+		add_filter( Broadcast::MESSAGE_FILTER, static fn ( Message $message ): Message => $message->with_html( str_replace( 'https://example.com/unsubscribe', Broadcast::UNSUBSCRIBE_PLACEHOLDER, (string) $message->html ) ) );
+
+		$this->assertTrue( wp_mail( 'anna@example.com', 'News', '<p><a href="https://example.com/unsubscribe">Unsubscribe</a></p>', array( self::HEADER_BROADCAST, self::HTML_TYPE ) ) );
+
+		$this->assertSame( '<p><a href="{{ unsubscribe_url }}">Unsubscribe</a></p>', $this->transport->sent[0]->html );
+	}
+
+	public function test_a_broadcast_that_fails_part_way_says_who_has_it_already(): void {
+		$this->transport->failure      = new SendFailed( 'Refused.', 'invalid_request', self::STATUS_UNPROCESSABLE );
+		$this->transport->accept_first = 1;
+
+		$this->assertFalse( wp_mail( 'anna@example.com, bo@example.com, cy@example.com', 'News', self::TEXT_WITH_LINK, self::HEADER_BROADCAST ) );
+
+		$this->assertSame( 2, $this->transport->attempts );
+		$this->assertCount( 1, $this->errors );
+		$data = $this->errors[0]->get_error_data();
+		$this->assertSame( array( 'msg_fake_1' ), $data['sendora_message_ids'] );
+		$this->assertSame( array( 'anna@example.com' ), $data['sendora_sent_to'] );
 	}
 
 	public function test_a_broadcast_filter_that_returns_no_message_keeps_the_message(): void {

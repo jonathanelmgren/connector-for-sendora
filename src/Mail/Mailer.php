@@ -19,7 +19,8 @@ use WP_Error;
  * As wp_mail() does, a send fires `wp_mail_succeeded` with the message's
  * data, to which it adds the ids Sendora gave the message's sends, and a
  * failure fires `wp_mail_failed` with a WP_Error whose data adds Sendora's
- * error code and HTTP status to the message's data. A message
+ * error code and HTTP status to the message's data, and the ids and
+ * recipients of the sends that went out before the failure. A message
  * that goes out as several sends (see {@see Message::deliveries()} and
  * {@see Broadcast::deliveries()}) stops at the first that fails. A
  * broadcast that breaks Sendora's rules fails, and is never sent on the
@@ -67,17 +68,22 @@ final class Mailer {
 			'attachments' => $atts['attachments'] ?? array(),
 		);
 
+		$ids     = array();
+		$sent_to = array();
 		try {
 			$message    = ( new MessageBuilder( $this->settings ) )->build( $atts );
 			$transport  = ( $this->transports )();
-			$ids        = array();
 			$deliveries = $message->broadcast ? ( new Broadcast() )->deliveries( $message, $atts ) : $message->deliveries();
 			foreach ( $deliveries as $delivery ) {
-				$ids[] = $transport->send( $delivery );
+				$ids[]   = $transport->send( $delivery );
+				$sent_to = array_merge( $sent_to, array_map( static fn ( Address $a ): string => $a->email, array_merge( $delivery->to, $delivery->cc, $delivery->bcc ) ) );
 			}
 		} catch ( SendFailed $failure ) {
 			$mail_data['sendora_error_code'] = $failure->error_code;
 			$mail_data['sendora_status']     = $failure->status;
+			// A message sent as several can fail part way: say who has it already, so a retry can leave them out.
+			$mail_data['sendora_message_ids'] = $ids;
+			$mail_data['sendora_sent_to']     = $sent_to;
 			/** This action is documented in wp-includes/pluggable.php. */
 			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress's own hook, as wp_mail() uses it.
 			do_action( 'wp_mail_failed', new WP_Error( self::ERROR_CODE, $failure->getMessage(), $mail_data ) );

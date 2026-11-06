@@ -20,8 +20,8 @@ final class HtmlToText {
 	/** Elements whose content is never text the reader sees. */
 	private const HIDDEN_ELEMENTS = '#<(head|title|style|script)\b[^>]*>.*?</\1\s*>#is';
 
-	/** A link with an address: the quote, the address, the label. */
-	private const LINK = '#<a\b[^>]*?\bhref\s*=\s*(["\'])(.*?)\1[^>]*>(.*?)</a\s*>#is';
+	/** A link: its opening tag, and its label. */
+	private const LINK = '#(<a\b[^>]*>)(.*?)</a\s*>#is';
 
 	private const LINE_BREAK = '#<br\b[^>]*>#i';
 
@@ -47,7 +47,7 @@ final class HtmlToText {
 	 */
 	public static function convert( string $html ): string {
 		$text = self::replace( self::HIDDEN_ELEMENTS, '', $html );
-		$text = preg_replace_callback( self::LINK, static fn ( array $link ): string => self::link( $link[2], $link[3] ), $text ) ?? $text;
+		$text = preg_replace_callback( self::LINK, static fn ( array $link ): string => self::link( $link[1], $link[2] ), $text ) ?? $text;
 		$text = self::replace( self::LINE_BREAK, "\n", $text );
 		$text = self::replace( self::LIST_ITEM, self::LIST_ITEM_MARK, $text );
 		$text = self::replace( self::BLOCK_TAG, self::PARAGRAPH_BREAK, $text );
@@ -59,21 +59,30 @@ final class HtmlToText {
 
 	/**
 	 * A link as text: its label, then its address in brackets, unless the
-	 * label is the address already.
+	 * label is the address already. A link without an address is its label.
 	 *
-	 * @param string $href  The link's address, as the HTML writes it.
+	 * @param string $tag   The link's opening tag.
 	 * @param string $label The link's content, as HTML.
 	 */
-	private static function link( string $href, string $label ): string {
-		$plain_label = trim( html_entity_decode( wp_strip_all_tags( $label ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) );
-		$plain_href  = trim( html_entity_decode( $href, ENT_QUOTES | ENT_HTML5, 'UTF-8' ) );
-		if ( '' === $plain_label ) {
-			return $href;
-		}
-		if ( $plain_label === $plain_href || 'mailto:' . $plain_label === $plain_href ) {
+	private static function link( string $tag, string $label ): string {
+		// WordPress's own HTML parser reads the attribute: quoted or not, and never a lookalike such as data-href.
+		$processor = new \WP_HTML_Tag_Processor( $tag );
+		$href      = $processor->next_tag() ? $processor->get_attribute( 'href' ) : null;
+		if ( ! is_string( $href ) || '' === trim( $href ) ) {
 			return $label;
 		}
-		return $label . ' (' . $href . ')';
+		$href = trim( $href );
+
+		$plain_label = trim( html_entity_decode( wp_strip_all_tags( $label ), ENT_QUOTES | ENT_HTML5, 'UTF-8' ) );
+		// The address is decoded already; encoded again, it survives the decoding of the whole text unchanged.
+		$encoded_href = htmlspecialchars( $href, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		if ( '' === $plain_label ) {
+			return $encoded_href;
+		}
+		if ( $plain_label === $href || 'mailto:' . $plain_label === $href ) {
+			return $label;
+		}
+		return $label . ' (' . $encoded_href . ')';
 	}
 
 	/**
