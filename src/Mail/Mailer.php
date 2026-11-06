@@ -17,8 +17,9 @@ use WP_Error;
  * Without one it steps aside, and WordPress's own mailer runs untouched.
  *
  * As wp_mail() does, a send fires `wp_mail_succeeded` with the message's
- * data, and a failure fires `wp_mail_failed` with a WP_Error whose data adds
- * Sendora's error code and HTTP status to the message's data. A message
+ * data, to which it adds the ids Sendora gave the message's sends, and a
+ * failure fires `wp_mail_failed` with a WP_Error whose data adds Sendora's
+ * error code and HTTP status to the message's data. A message
  * that goes out as several sends (see {@see Message::deliveries()}) stops
  * at the first that fails.
  */
@@ -67,8 +68,9 @@ final class Mailer {
 		try {
 			$message   = ( new MessageBuilder( $this->settings ) )->build( $atts );
 			$transport = ( $this->transports )();
+			$ids       = array();
 			foreach ( $message->deliveries() as $delivery ) {
-				$transport->send( $delivery );
+				$ids[] = $transport->send( $delivery );
 			}
 		} catch ( SendFailed $failure ) {
 			$mail_data['sendora_error_code'] = $failure->error_code;
@@ -79,6 +81,7 @@ final class Mailer {
 			return false;
 		}
 
+		$mail_data['sendora_message_ids'] = $ids;
 		/** This action is documented in wp-includes/pluggable.php. */
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress's own hook, as wp_mail() uses it.
 		do_action( 'wp_mail_succeeded', $mail_data );

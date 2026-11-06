@@ -18,6 +18,8 @@ Each setting can be saved on the settings page, or set in `wp-config.php`, which
 
 Settings saved on the page are kept in the option `connector_for_sendora_settings`. A saved API key is never shown again. A test server's key (`sk_test_…`) puts the plugin in test mode: Sendora accepts the mail and delivers none of it.
 
+A sent message fires `wp_mail_succeeded` with the message's data and `sendora_message_ids`, the ids Sendora gave it: one, or one per recipient for a message with only Bcc recipients, which goes to each of them alone.
+
 A failed send makes `wp_mail()` return false and fires `wp_mail_failed` with a `WP_Error` whose data adds `sendora_error_code` and `sendora_status` to the message's data.
 
 The filter `connector_for_sendora_transport` can return a `ConnectorForSendora\Mail\Transport` to send through something other than Sendora's API.

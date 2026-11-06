@@ -330,6 +330,7 @@ final class MailerTest extends TestCase {
 
 		$this->assertCount( 1, $succeeded );
 		$this->assertSame( 'Hi', $succeeded[0]['subject'] );
+		$this->assertSame( array( 'msg_fake_1' ), $succeeded[0]['sendora_message_ids'] );
 	}
 
 	public function test_an_earlier_pre_wp_mail_answer_is_kept(): void {
