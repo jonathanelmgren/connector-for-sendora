@@ -24,7 +24,7 @@ final class Schema {
 	public const VERSION_OPTION = 'connector_for_sendora_db_version';
 
 	/** The schema's version; raise it with every change to a table below. */
-	public const VERSION = '3';
+	public const VERSION = '1';
 
 	/**
 	 * The longest address the list keeps: RFC 5321's limit on a path,
@@ -46,9 +46,6 @@ final class Schema {
 
 	/** The length of a {@see self::HASH_ALGO} hash, in hex. */
 	private const HASH_LENGTH = 64;
-
-	/** The width MySQL's SHA2() is asked for, which gives {@see self::HASH_ALGO}. */
-	private const SQL_SHA2_BITS = 256;
 
 	/**
 	 * The key a value is kept under, in a column of {@see self::HASH_LENGTH}
@@ -77,8 +74,6 @@ final class Schema {
 		global $wpdb;
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-		self::key_suppressions_on_hash();
-
 		$charset     = $wpdb->get_charset_collate();
 		$suppression = SuppressionList::table();
 		$deliveries  = DeliveryLog::table();
@@ -87,7 +82,6 @@ final class Schema {
 		$hash        = self::HASH_LENGTH;
 
 		// dbDelta() wants each column on its own line and two spaces after PRIMARY KEY.
-		// A delivery recorded before deliveries had a status was handled: it defaults to done.
 		dbDelta(
 			"CREATE TABLE {$suppression} (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -103,7 +97,7 @@ final class Schema {
 ) {$charset};
 CREATE TABLE {$deliveries} (
   delivery_hash char({$hash}) NOT NULL,
-  status varchar(20) NOT NULL DEFAULT 'done',
+  status varchar(20) NOT NULL,
   received_at datetime NOT NULL,
   PRIMARY KEY  (delivery_hash),
   KEY received_at (received_at)
@@ -124,29 +118,5 @@ CREATE TABLE {$deliveries} (
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- checks the schema once, after an install.
 		return $table === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) );
-	}
-
-	/**
-	 * Moves a suppression table from version 1, whose unique key covered
-	 * only an address's first {@see self::INDEX_PREFIX} characters, onto a
-	 * key of the address's hash. dbDelta() then adds the new keys; it never
-	 * drops or changes one.
-	 */
-	private static function key_suppressions_on_hash(): void {
-		global $wpdb;
-		$table = SuppressionList::table();
-		if ( ! self::exists( $table ) ) {
-			return;
-		}
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange -- the plugin's own table, changed once on upgrade.
-		$prefix_keyed = null !== $wpdb->get_row( $wpdb->prepare( 'SHOW INDEX FROM %i WHERE Key_name = %s AND Column_name = %s', $table, 'email_reason', 'email' ) );
-		if ( $prefix_keyed ) {
-			if ( null === $wpdb->get_row( $wpdb->prepare( 'SHOW COLUMNS FROM %i LIKE %s', $table, 'email_hash' ) ) ) {
-				$wpdb->query( $wpdb->prepare( 'ALTER TABLE %i ADD COLUMN email_hash char(%d) NOT NULL AFTER email', $table, self::HASH_LENGTH ) );
-			}
-			$wpdb->query( $wpdb->prepare( 'UPDATE %i SET email_hash = SHA2(email, %d)', $table, self::SQL_SHA2_BITS ) );
-			$wpdb->query( $wpdb->prepare( 'ALTER TABLE %i DROP INDEX email_reason', $table ) );
-		}
-		// phpcs:enable
 	}
 }
