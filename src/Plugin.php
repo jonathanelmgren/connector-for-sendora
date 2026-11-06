@@ -10,10 +10,15 @@ declare(strict_types=1);
 namespace ConnectorForSendora;
 
 use ConnectorForSendora\Admin\SettingsPage;
+use ConnectorForSendora\Admin\SuppressionPage;
+use ConnectorForSendora\Database\Schema;
 use ConnectorForSendora\Mail\Mailer;
 use ConnectorForSendora\Mail\Transport;
 use ConnectorForSendora\Sendora\SendoraTransport;
 use ConnectorForSendora\Settings\Settings;
+use ConnectorForSendora\Suppression\SuppressionList;
+use ConnectorForSendora\Webhook\DeliveryLog;
+use ConnectorForSendora\Webhook\Webhook;
 
 /**
  * The plugin's entry point, called once from the main plugin file.
@@ -25,12 +30,17 @@ final class Plugin {
 
 	/** Hooks everything in. */
 	public static function boot(): void {
-		$settings = new Settings();
+		Schema::maybe_upgrade();
 
-		( new Mailer( $settings, static fn (): Transport => self::transport( $settings ) ) )->register();
+		$settings    = new Settings();
+		$suppression = new SuppressionList();
+
+		( new Mailer( $settings, static fn (): Transport => self::transport( $settings ), $suppression ) )->register();
+		( new Webhook( $settings, $suppression, new DeliveryLog() ) )->register();
 
 		if ( is_admin() ) {
 			( new SettingsPage( $settings ) )->register();
+			( new SuppressionPage( $suppression ) )->register();
 		}
 	}
 
