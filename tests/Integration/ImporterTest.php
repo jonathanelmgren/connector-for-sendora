@@ -126,16 +126,19 @@ final class ImporterTest extends TestCase {
 	public static function header_variants(): array {
 		$default = new ImportOptions();
 		return array(
-			'upper case, spaces'         => array( " EMAIL , Status \nanna@example.com,undeliverable\n", $default ),
-			'quoted'                     => array( "\"email\",\"status\"\n\"anna@example.com\",\"undeliverable\"\n", $default ),
-			'other columns first'        => array( "id,name,status,email\n7,Anna,undeliverable,anna@example.com\n", $default ),
-			'semicolons'                 => array( "email;status;reason\nanna@example.com;undeliverable;rejected_email\n", $default ),
-			'tabs'                       => array( "email\tstatus\nanna@example.com\tundeliverable\n", $default ),
-			'CRLF and blank lines'       => array( "email,status\r\n\r\nanna@example.com,undeliverable\r\n\r\n", $default ),
-			'a quoted comma in a field'  => array( "name,email,status\n\"Svensson, Anna\",anna@example.com,undeliverable\n", $default ),
-			'ZeroBounce'                 => array( "Email Address,First Name,ZB Status,ZB Sub Status\nanna@example.com,Anna,Invalid,mailbox_not_found\n", new ImportOptions( 'Email Address', 'zb status', array( 'invalid' ) ) ),
-			'BOM'                        => array( CsvFiles::BOM . "email,status\nanna@example.com,undeliverable\n", $default ),
-			'BOM before a quoted header' => array( CsvFiles::BOM . "\"email\",\"status\"\nanna@example.com,undeliverable\n", $default ),
+			'upper case, spaces'                 => array( " EMAIL , Status \nanna@example.com,undeliverable\n", $default ),
+			'quoted'                             => array( "\"email\",\"status\"\n\"anna@example.com\",\"undeliverable\"\n", $default ),
+			'other columns first'                => array( "id,name,status,email\n7,Anna,undeliverable,anna@example.com\n", $default ),
+			'semicolons'                         => array( "email;status;reason\nanna@example.com;undeliverable;rejected_email\n", $default ),
+			'tabs'                               => array( "email\tstatus\nanna@example.com\tundeliverable\n", $default ),
+			'CRLF and blank lines'               => array( "email,status\r\n\r\nanna@example.com,undeliverable\r\n\r\n", $default ),
+			'a quoted comma in a field'          => array( "name,email,status\n\"Svensson, Anna\",anna@example.com,undeliverable\n", $default ),
+			'ZeroBounce'                         => array( "Email Address,First Name,ZB Status,ZB Sub Status\nanna@example.com,Anna,Invalid,mailbox_not_found\n", new ImportOptions( 'Email Address', 'zb status', array( 'invalid' ) ) ),
+			'BOM'                                => array( CsvFiles::BOM . "email,status\nanna@example.com,undeliverable\n", $default ),
+			'BOM before a quoted header'         => array( CsvFiles::BOM . "\"email\",\"status\"\nanna@example.com,undeliverable\n", $default ),
+			'semicolons in a quoted column name' => array( "email,status,\"Notes; a; b; c\"\nanna@example.com,undeliverable,x\n", $default ),
+			'commas in a quoted column name'     => array( "email;status;\"Notes, a, b, c\"\nanna@example.com;undeliverable;x\n", $default ),
+			'a column name spanning lines'       => array( "email,\"Sub\nStatus\",status\nanna@example.com,mailbox_not_found,undeliverable\n", $default ),
 		);
 	}
 
@@ -202,6 +205,13 @@ final class ImporterTest extends TestCase {
 			),
 			$plan->skipped[ ImportPlan::SKIP_INVALID_ADDRESS ][0]
 		);
+	}
+
+	public function test_a_row_number_counts_blank_records(): void {
+		$plan = $this->plan( array( 'email,status', '', 'not-an-address,invalid' ) );
+
+		$this->assertSame( 1, $plan->rows_read );
+		$this->assertSame( 3, $plan->skipped[ ImportPlan::SKIP_INVALID_ADDRESS ][0]['row'] );
 	}
 
 	public function test_the_summary_gives_counts_and_no_address(): void {

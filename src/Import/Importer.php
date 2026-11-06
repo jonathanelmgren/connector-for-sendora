@@ -29,7 +29,7 @@ final class Importer {
 	/** The byte order mark a UTF-8 file may start with. */
 	private const UTF8_BOM = "\xEF\xBB\xBF";
 
-	/** The separators a header row is tried with; the first wins a tie. */
+	/** The separators a header row is tried with, in this order. */
 	private const SEPARATORS = array( ',', ';', "\t" );
 
 	/** The quote around a field. */
@@ -37,6 +37,12 @@ final class Importer {
 
 	/** No escape character: a quote inside a field is doubled, as RFC 4180 has it. */
 	private const NO_ESCAPE = '';
+
+	/**
+	 * The header's record number. A row's number counts CSV records, so it
+	 * differs from the file's line only after a quoted field spanning lines.
+	 */
+	private const HEADER_ROW = 1;
 
 	/**
 	 * An importer.
@@ -54,19 +60,23 @@ final class Importer {
 	 * @throws ImportFailed The file cannot be read, has no header row, or lacks a column.
 	 */
 	public function plan( string $path, ImportOptions $options ): ImportPlan {
-		$file                     = $this->open( $path );
-		[ $email_at, $status_at ] = $this->columns( $file, $options );
+		[ $file, $start ]         = $this->open( $path );
+		[ $email_at, $status_at ] = $this->columns( $file, $start, $options );
 
 		$rows_read  = 0;
-		$row_number = 1;
+		$row_number = self::HEADER_ROW;
 		$candidates = array();
 		$skipped    = array();
 		while ( ! $file->eof() ) {
 			$row = $file->fgetcsv();
-			if ( ! is_array( $row ) || array( null ) === $row ) {
+			if ( ! is_array( $row ) ) {
 				continue;
 			}
+			// A blank record keeps its number, so later rows match the file.
 			++$row_number;
+			if ( array( null ) === $row ) {
+				continue;
+			}
 			++$rows_read;
 			$email  = SuppressionList::normalise( (string) ( $row[ $email_at ] ?? '' ) );
 			$status = (string) ( $row[ $status_at ] ?? '' );
@@ -118,13 +128,14 @@ final class Importer {
 	}
 
 	/**
-	 * The file, past its byte order mark, read as CSV with the separator its
-	 * header row uses.
+	 * The file, opened, and where its header row starts, past any byte order
+	 * mark.
 	 *
 	 * @param string $path The file.
+	 * @return array{0: SplFileObject, 1: int}
 	 * @throws ImportFailed The file cannot be read.
 	 */
-	private function open( string $path ): SplFileObject {
+	private function open( string $path ): array {
 		if ( ! is_file( $path ) || ! is_readable( $path ) ) {
 			throw ImportFailed::unreadable();
 		}
@@ -135,46 +146,43 @@ final class Importer {
 		}
 
 		$start = self::UTF8_BOM === $file->fread( strlen( self::UTF8_BOM ) ) ? strlen( self::UTF8_BOM ) : 0;
-		$file->fseek( $start );
-		$header = (string) $file->fgets();
-		$file->fseek( $start );
-
-		$separator = self::SEPARATORS[0];
-		$most      = 0;
-		foreach ( self::SEPARATORS as $candidate ) {
-			$found = substr_count( $header, $candidate );
-			if ( $found > $most ) {
-				$separator = $candidate;
-				$most      = $found;
-			}
-		}
-		$file->setCsvControl( $separator, self::ENCLOSURE, self::NO_ESCAPE );
-		return $file;
+		return array( $file, $start );
 	}
 
 	/**
-	 * Reads the header row, and finds the address and status columns in it.
+	 * Reads the header row with each separator in turn, and finds the address
+	 * and status columns in it. The first separator that gives both wins; the
+	 * file is left just past the header row, read with that separator.
 	 *
-	 * @param SplFileObject $file    The file, at its header row.
+	 * @param SplFileObject $file    The file.
+	 * @param int           $start   Where its header row starts.
 	 * @param ImportOptions $options The columns to find.
 	 * @return array{0: int, 1: int} The positions of the address column and the status column.
-	 * @throws ImportFailed The file has no header row, or lacks a column.
+	 * @throws ImportFailed The file has no header row, or no separator gives both columns.
 	 */
-	private function columns( SplFileObject $file, ImportOptions $options ): array {
-		$header = $file->eof() ? false : $file->fgetcsv();
-		if ( ! is_array( $header ) || array( null ) === $header ) {
-			throw ImportFailed::empty_file();
-		}
-		$names = array_map( static fn ( $name ): string => ImportOptions::fold( (string) $name ), $header );
-
-		$positions = array();
-		foreach ( array( $options->email_column, $options->status_column ) as $column ) {
-			$at = array_search( $column, $names, true );
-			if ( ! is_int( $at ) ) {
-				throw ImportFailed::missing_column( $column, $header ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- escaped where it is shown.
+	private function columns( SplFileObject $file, int $start, ImportOptions $options ): array {
+		$wanted  = array( $options->email_column, $options->status_column );
+		$closest = array();
+		foreach ( self::SEPARATORS as $separator ) {
+			$file->fseek( $start );
+			$file->setCsvControl( $separator, self::ENCLOSURE, self::NO_ESCAPE );
+			$header = $file->eof() ? false : $file->fgetcsv();
+			if ( ! is_array( $header ) || array( null ) === $header ) {
+				throw ImportFailed::empty_file();
 			}
-			$positions[] = $at;
+			$names     = array_map( static fn ( $name ): string => ImportOptions::fold( (string) $name ), $header );
+			$positions = array_map( static fn ( string $column ): int|false => array_search( $column, $names, true ), $wanted );
+			if ( is_int( $positions[0] ) && is_int( $positions[1] ) ) {
+				return array( $positions[0], $positions[1] );
+			}
+			// The header with the most fields names the columns the error lists.
+			if ( count( $header ) > count( $closest ) ) {
+				$closest = $header;
+			}
 		}
-		return array( $positions[0], $positions[1] );
+
+		$names   = array_map( static fn ( $name ): string => ImportOptions::fold( (string) $name ), $closest );
+		$missing = in_array( $options->email_column, $names, true ) ? $options->status_column : $options->email_column;
+		throw ImportFailed::missing_column( $missing, $closest ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- escaped where it is shown.
 	}
 }
