@@ -20,8 +20,10 @@ use WP_Error;
  * data, to which it adds the ids Sendora gave the message's sends, and a
  * failure fires `wp_mail_failed` with a WP_Error whose data adds Sendora's
  * error code and HTTP status to the message's data. A message
- * that goes out as several sends (see {@see Message::deliveries()}) stops
- * at the first that fails.
+ * that goes out as several sends (see {@see Message::deliveries()} and
+ * {@see Broadcast::deliveries()}) stops at the first that fails. A
+ * broadcast that breaks Sendora's rules fails, and is never sent on the
+ * transactional stream instead.
  */
 final class Mailer {
 
@@ -66,10 +68,11 @@ final class Mailer {
 		);
 
 		try {
-			$message   = ( new MessageBuilder( $this->settings ) )->build( $atts );
-			$transport = ( $this->transports )();
-			$ids       = array();
-			foreach ( $message->deliveries() as $delivery ) {
+			$message    = ( new MessageBuilder( $this->settings ) )->build( $atts );
+			$transport  = ( $this->transports )();
+			$ids        = array();
+			$deliveries = $message->broadcast ? ( new Broadcast() )->deliveries( $message, $atts ) : $message->deliveries();
+			foreach ( $deliveries as $delivery ) {
 				$ids[] = $transport->send( $delivery );
 			}
 		} catch ( SendFailed $failure ) {
