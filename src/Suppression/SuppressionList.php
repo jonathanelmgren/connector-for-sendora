@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace ConnectorForSendora\Suppression;
 
+use ConnectorForSendora\Database\QueryFailed;
 use ConnectorForSendora\Database\Schema;
 use ConnectorForSendora\Mail\Stream;
 use DateTimeImmutable;
@@ -83,6 +84,7 @@ final class SuppressionList {
 	 * @param string|null            $stream_id The Sendora stream the event came from; null when not known.
 	 * @param DateTimeImmutable|null $when      When it happened; now when not given.
 	 * @throws \InvalidArgumentException The reason or the source is not one of the known ones, or the address is empty or too long.
+	 * @throws QueryFailed The database refused the write.
 	 */
 	public function add( string $email, string $reason, string $source, ?string $stream_id = null, ?DateTimeImmutable $when = null ): void {
 		global $wpdb;
@@ -97,7 +99,7 @@ final class SuppressionList {
 
 		// prepare() writes null as '', which NULLIF() turns back into NULL.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- the plugin's own table; nothing caches it.
-		$wpdb->query(
+		$written = $wpdb->query(
 			$wpdb->prepare(
 				'INSERT INTO %i (email, email_hash, reason, source, stream_id, suppressed_at) VALUES (%s, %s, %s, %s, NULLIF(%s, \'\'), %s)
 				ON DUPLICATE KEY UPDATE source = VALUES(source), stream_id = VALUES(stream_id), suppressed_at = VALUES(suppressed_at)',
@@ -110,6 +112,9 @@ final class SuppressionList {
 				$when
 			)
 		);
+		if ( false === $written ) {
+			throw QueryFailed::last( 'Adding to the suppression list' );
+		}
 	}
 
 	/**

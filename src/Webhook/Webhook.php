@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace ConnectorForSendora\Webhook;
 
+use ConnectorForSendora\Database\QueryFailed;
 use ConnectorForSendora\Settings\Settings;
 use ConnectorForSendora\Suppression\SuppressionList;
 use ConnectorForSendora\Vendor\Sendora\Events\BouncedEvent;
@@ -31,7 +32,9 @@ use WP_REST_Server;
  * complaint and an unsubscribe also put the address on the suppression
  * list and fire `connector_for_sendora_bounced`,
  * `connector_for_sendora_complained` or `connector_for_sendora_unsubscribed`.
- * A delivery already handled answers 200 and changes nothing.
+ * A delivery already handled answers 200 and changes nothing. A delivery
+ * another request is handling, or whose handling fails, answers 503 and is
+ * handled on Sendora's retry.
  */
 final class Webhook {
 
@@ -59,7 +62,7 @@ final class Webhook {
 	/** Fired for an unsubscribe. */
 	public const UNSUBSCRIBED_ACTION = 'connector_for_sendora_unsubscribed';
 
-	/** The answer without a signing secret: Sendora retries. */
+	/** The answer without a signing secret, or while a delivery cannot be handled yet: Sendora retries. */
 	private const STATUS_UNAVAILABLE = 503;
 
 	/** The answer to a delivery whose signature does not hold. */
@@ -108,7 +111,6 @@ final class Webhook {
 	 *
 	 * @param WP_REST_Request $request The delivery.
 	 * @return WP_REST_Response|WP_Error
-	 * @throws \Throwable Handling the event failed; the delivery is left unhandled, for Sendora to retry.
 	 */
 	public function receive( WP_REST_Request $request ) {
 		$secret = $this->settings->get( Settings::WEBHOOK_SECRET );
@@ -127,17 +129,40 @@ final class Webhook {
 			return new WP_Error( 'connector_for_sendora_' . $e->errorCode, $e->getMessage(), array( 'status' => self::STATUS_BAD_REQUEST ) );
 		}
 
-		if ( ! $this->deliveries->claim( $event->id ) ) {
+		try {
+			$claim = $this->deliveries->claim( $event->id );
+		} catch ( QueryFailed ) {
+			return self::unhandled();
+		}
+		if ( DeliveryLog::DONE === $claim ) {
 			return new WP_REST_Response( array( 'duplicate' => true ) );
 		}
+		if ( DeliveryLog::IN_PROGRESS === $claim ) {
+			return new WP_Error(
+				'connector_for_sendora_delivery_in_progress',
+				__( 'This delivery is being handled already.', 'connector-for-sendora' ),
+				array( 'status' => self::STATUS_UNAVAILABLE )
+			);
+		}
+
 		try {
 			$this->handle( $event );
-		} catch ( \Throwable $e ) {
+			$this->deliveries->complete( $event->id );
+		} catch ( \Throwable ) {
 			// Not handled after all: Sendora's retry gets another go.
 			$this->deliveries->release( $event->id );
-			throw $e;
+			return self::unhandled();
 		}
 		return new WP_REST_Response( array( 'duplicate' => false ) );
+	}
+
+	/** The answer to a delivery that could not be handled, which Sendora retries. */
+	private static function unhandled(): WP_Error {
+		return new WP_Error(
+			'connector_for_sendora_delivery_failed',
+			__( 'The delivery could not be handled.', 'connector-for-sendora' ),
+			array( 'status' => self::STATUS_UNAVAILABLE )
+		);
 	}
 
 	/**

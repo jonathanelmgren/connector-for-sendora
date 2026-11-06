@@ -24,7 +24,7 @@ final class Schema {
 	public const VERSION_OPTION = 'connector_for_sendora_db_version';
 
 	/** The schema's version; raise it with every change to a table below. */
-	public const VERSION = '2';
+	public const VERSION = '3';
 
 	/**
 	 * The longest address the list keeps: RFC 5321's limit on a path,
@@ -87,6 +87,7 @@ final class Schema {
 		$hash        = self::HASH_LENGTH;
 
 		// dbDelta() wants each column on its own line and two spaces after PRIMARY KEY.
+		// A delivery recorded before deliveries had a status was handled: it defaults to done.
 		dbDelta(
 			"CREATE TABLE {$suppression} (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -102,6 +103,7 @@ final class Schema {
 ) {$charset};
 CREATE TABLE {$deliveries} (
   delivery_hash char({$hash}) NOT NULL,
+  status varchar(20) NOT NULL DEFAULT 'done',
   received_at datetime NOT NULL,
   PRIMARY KEY  (delivery_hash),
   KEY received_at (received_at)

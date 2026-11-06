@@ -31,12 +31,36 @@ final class WebhookTest extends TestCase {
 	/** Older than the SDK's five minutes of tolerance. */
 	private const STALE_SECONDS = 600;
 
+	/** How the plugin's tables write a time. */
+	private const DATE_FORMAT = 'Y-m-d H:i:s';
+
+	/**
+	 * The filter that turns writes to a table into SQL the database
+	 * refuses; null when none is set.
+	 *
+	 * @var \Closure(string): string|null
+	 */
+	private ?\Closure $break_writes = null;
+
+	/**
+	 * Whether the database's errors were suppressed before writes were
+	 * broken.
+	 *
+	 * @var bool
+	 */
+	private bool $suppressed_errors = false;
+
 	private SuppressionList $list;
 
 	public function set_up(): void {
 		parent::set_up();
 		$this->configure( array( Settings::WEBHOOK_SECRET => WebhookDeliveries::SECRET ) );
 		$this->list = new SuppressionList();
+	}
+
+	public function tear_down(): void {
+		$this->restore_writes();
+		parent::tear_down();
 	}
 
 	public function test_without_a_secret_the_webhook_answers_503(): void {
@@ -142,24 +166,84 @@ final class WebhookTest extends TestCase {
 		$this->assertNull( $this->list->reason( 'anna@example.com', 'transactional' ) );
 	}
 
-	public function test_a_delivery_whose_handling_fails_is_handled_on_its_retry(): void {
+	public function test_a_delivery_whose_handling_fails_answers_503_and_is_handled_on_its_retry(): void {
 		$payload = WebhookDeliveries::complained( 'anna@example.com' );
 		$fail    = static function (): void {
 			throw new \RuntimeException( 'A hook failed.' );
 		};
 		add_action( Webhook::EVENT_ACTION, $fail );
-		$webhook = new Webhook( new Settings(), $this->list, new DeliveryLog() );
 
-		try {
-			$webhook->receive( WebhookDeliveries::request( $payload ) );
-			$this->fail( 'The hook should have thrown.' );
-		} catch ( \RuntimeException $e ) {
-			$this->assertSame( 'A hook failed.', $e->getMessage() );
-		}
+		$failed = $this->dispatch( WebhookDeliveries::request( $payload ) );
 		remove_action( Webhook::EVENT_ACTION, $fail );
+		$retry = $this->dispatch( WebhookDeliveries::request( $payload ) );
 
-		$retry = self::answer( $webhook, WebhookDeliveries::request( $payload ) );
+		$this->assertSame( self::STATUS_UNAVAILABLE, $failed->get_status() );
+		$this->assertSame( 'connector_for_sendora_delivery_failed', $failed->get_data()['code'] );
+		$this->assertSame( self::STATUS_OK, $retry->get_status() );
 		$this->assertSame( array( 'duplicate' => false ), $retry->get_data() );
+	}
+
+	public function test_a_claim_the_database_refuses_answers_503_and_suppresses_nothing(): void {
+		$this->break_writes_to( DeliveryLog::table() );
+
+		$response = $this->dispatch( WebhookDeliveries::request( WebhookDeliveries::bounced( 'anna@example.com' ) ) );
+		$this->restore_writes();
+
+		$this->assertSame( self::STATUS_UNAVAILABLE, $response->get_status() );
+		$this->assertSame( 'connector_for_sendora_delivery_failed', $response->get_data()['code'] );
+		$this->assertNull( $this->list->reason( 'anna@example.com', 'transactional' ) );
+	}
+
+	public function test_a_suppression_the_database_refuses_answers_503_and_is_stored_on_the_retry(): void {
+		$payload    = WebhookDeliveries::complained( 'anna@example.com' );
+		$complained = 0;
+		add_action(
+			Webhook::COMPLAINED_ACTION,
+			static function () use ( &$complained ): void {
+				++$complained;
+			}
+		);
+		$this->break_writes_to( SuppressionList::table() );
+
+		$failed = $this->dispatch( WebhookDeliveries::request( $payload ) );
+		$this->restore_writes();
+		$this->assertSame( 0, $complained );
+		$retry = $this->dispatch( WebhookDeliveries::request( $payload ) );
+
+		$this->assertSame( self::STATUS_UNAVAILABLE, $failed->get_status() );
+		$this->assertSame( array( 'duplicate' => false ), $retry->get_data() );
+		$this->assertSame( 1, $complained );
+		$this->assertSame( SuppressionList::COMPLAINED, $this->list->reason( 'anna@example.com', 'broadcast' ) );
+	}
+
+	public function test_a_delivery_another_request_is_handling_answers_503(): void {
+		$payload = WebhookDeliveries::bounced( 'anna@example.com' );
+		( new DeliveryLog() )->claim( $payload['id'] );
+
+		$response = $this->dispatch( WebhookDeliveries::request( $payload ) );
+
+		$this->assertSame( self::STATUS_UNAVAILABLE, $response->get_status() );
+		$this->assertSame( 'connector_for_sendora_delivery_in_progress', $response->get_data()['code'] );
+		$this->assertNull( $this->list->reason( 'anna@example.com', 'transactional' ) );
+	}
+
+	public function test_a_claim_whose_handling_never_finished_is_taken_over_once_its_lease_is_up(): void {
+		global $wpdb;
+		$payload = WebhookDeliveries::bounced( 'anna@example.com' );
+		( new DeliveryLog() )->claim( $payload['id'] );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- backdates the claim in the plugin's own table.
+		$wpdb->update(
+			DeliveryLog::table(),
+			array( 'received_at' => gmdate( self::DATE_FORMAT, time() - DeliveryLog::PROCESSING_LEASE_SECONDS - 1 ) ),
+			array( 'delivery_hash' => DeliveryLog::key( $payload['id'] ) )
+		);
+
+		$response = $this->dispatch( WebhookDeliveries::request( $payload ) );
+		$again    = $this->dispatch( WebhookDeliveries::request( $payload ) );
+
+		$this->assertSame( array( 'duplicate' => false ), $response->get_data() );
+		$this->assertSame( SuppressionList::BOUNCED, $this->list->reason( 'anna@example.com', 'transactional' ) );
+		$this->assertSame( array( 'duplicate' => true ), $again->get_data() );
 	}
 
 	public function test_every_verified_event_fires_the_event_hook(): void {
@@ -220,6 +304,29 @@ final class WebhookTest extends TestCase {
 		$this->dispatch( WebhookDeliveries::request( $payload ) );
 
 		$this->assertSame( array( array( 'anna@example.com', $payload['id'] ) ), $fired );
+	}
+
+	/**
+	 * Makes the database refuse every insert into and update of the table,
+	 * quietly, until {@see self::restore_writes()}.
+	 *
+	 * @param string $table The table.
+	 */
+	private function break_writes_to( string $table ): void {
+		global $wpdb;
+		$this->break_writes      = static fn ( string $query ): string => preg_match( '/^(INSERT|UPDATE)\b.*`' . preg_quote( $table, '/' ) . '`/s', $query ) ? 'NOT SQL' : $query;
+		$this->suppressed_errors = $wpdb->suppress_errors();
+		add_filter( 'query', $this->break_writes );
+	}
+
+	/** Lets writes through again. */
+	private function restore_writes(): void {
+		global $wpdb;
+		if ( null !== $this->break_writes ) {
+			remove_filter( 'query', $this->break_writes );
+			$this->break_writes = null;
+		}
+		$wpdb->suppress_errors( $this->suppressed_errors );
 	}
 
 	/**
