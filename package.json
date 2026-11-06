@@ -1,0 +1,26 @@
+{
+	"name": "connector-for-sendora",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Sends WordPress email through Sendora's API.",
+	"license": "GPL-2.0-or-later",
+	"engines": {
+		"node": ">=20"
+	},
+	"scripts": {
+		"setup": "node bin/composer.mjs install && node bin/wp-env.mjs start",
+		"composer": "node bin/composer.mjs",
+		"env:start": "node bin/wp-env.mjs start",
+		"env:stop": "node bin/wp-env.mjs stop",
+		"env:destroy": "node bin/wp-env.mjs destroy",
+		"lint": "node bin/php.mjs vendor/bin/phpcs",
+		"format": "node bin/php.mjs vendor/bin/phpcbf",
+		"stan": "node bin/php.mjs php -d memory_limit=1G vendor/bin/phpstan analyse --no-progress",
+		"test": "node bin/test.mjs",
+		"plugin-check": "node bin/plugin-check.mjs",
+		"check": "node bin/check.mjs"
+	},
+	"devDependencies": {
+		"@wordpress/env": "11.17.0"
+	}
+}

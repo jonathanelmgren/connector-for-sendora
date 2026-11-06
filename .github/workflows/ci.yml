@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: PHPCS, PHPStan, PHPUnit, Plugin Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Composer dependencies
+        run: npm run composer -- install --no-interaction --no-progress
+
+      # The same gate as `npm run check` locally. It refuses to run with a
+      # Sendora key in the environment, and the tests refuse every request
+      # to a host other than this machine.
+      - name: Check
+        run: npm run check

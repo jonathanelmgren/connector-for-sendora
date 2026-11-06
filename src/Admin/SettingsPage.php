@@ -1,0 +1,396 @@
+<?php
+/**
+ * The settings page under Settings, and the test-mode notice.
+ *
+ * @package ConnectorForSendora
+ */
+
+declare(strict_types=1);
+
+namespace ConnectorForSendora\Admin;
+
+use ConnectorForSendora\Settings\Settings;
+use WP_Error;
+
+/**
+ * Settings → Sendora: the API key, the two stream ids and the default
+ * sender, each read-only when a wp-config.php constant sets it, and a
+ * button that sends a test email.
+ *
+ * A saved API key is never written back into the page: the field stays
+ * empty, and leaving it empty keeps the saved key.
+ */
+final class SettingsPage {
+
+	/** The page's slug, in its address. */
+	public const SLUG = 'connector-for-sendora';
+
+	/** The page's screen id, from add_options_page(). */
+	private const SCREEN = 'settings_page_' . self::SLUG;
+
+	/** The settings group the form saves. */
+	private const GROUP = 'connector_for_sendora';
+
+	/** The capability the page and the test email need. */
+	private const CAPABILITY = 'manage_options';
+
+	/** The admin-post action that sends the test email. */
+	public const TEST_ACTION = 'connector_for_sendora_test_email';
+
+	/** The form field that asks for the saved key to be removed. */
+	public const REMOVE_KEY_FIELD = 'remove_api_key';
+
+	/** The query argument the page is shown with after a test email. */
+	private const TEST_RESULT_ARG = 'connector_for_sendora_test';
+
+	/** How long a test email's result waits to be shown, in seconds. */
+	private const TEST_RESULT_TTL = 60;
+
+	/**
+	 * A page.
+	 *
+	 * @param Settings $settings The settings it shows and saves.
+	 */
+	public function __construct( private readonly Settings $settings ) {
+	}
+
+	/** Hooks the page, its form handlers and its notice in. */
+	public function register(): void {
+		add_action( 'admin_menu', array( $this, 'add_page' ) );
+		add_action( 'admin_init', array( $this, 'register_setting' ) );
+		add_action( 'admin_post_' . self::TEST_ACTION, array( $this, 'send_test_email' ) );
+		add_action( 'admin_notices', array( $this, 'test_mode_notice' ) );
+		add_filter( 'plugin_action_links_' . plugin_basename( CONNECTOR_FOR_SENDORA_FILE ), array( $this, 'action_links' ) );
+	}
+
+	/** Adds the page under Settings. */
+	public function add_page(): void {
+		add_options_page(
+			__( 'Sendora', 'connector-for-sendora' ),
+			__( 'Sendora', 'connector-for-sendora' ),
+			self::CAPABILITY,
+			self::SLUG,
+			array( $this, 'render' )
+		);
+	}
+
+	/** Registers the option the form saves. */
+	public function register_setting(): void {
+		register_setting(
+			self::GROUP,
+			Settings::OPTION,
+			array(
+				'type'              => 'array',
+				'sanitize_callback' => array( $this, 'sanitize' ),
+				'default'           => array(),
+				'show_in_rest'      => false,
+			)
+		);
+	}
+
+	/**
+	 * A Settings link next to the plugin's name on the Plugins screen.
+	 *
+	 * @param array<int|string, string> $links The existing links.
+	 * @return array<int|string, string>
+	 */
+	public function action_links( $links ): array {
+		$settings = sprintf( '<a href="%s">%s</a>', esc_url( self::url() ), esc_html__( 'Settings', 'connector-for-sendora' ) );
+		return array_merge( array( 'settings' => $settings ), (array) $links );
+	}
+
+	/**
+	 * The option's new value from the submitted form. A field a constant
+	 * sets keeps its saved value; an empty API key field keeps the saved
+	 * key, unless removing it was asked for.
+	 *
+	 * @param mixed $input The submitted values.
+	 * @return array<string, string>
+	 */
+	public function sanitize( $input ): array {
+		$input = is_array( $input ) ? $input : array();
+		$saved = Settings::saved();
+		$clean = array();
+
+		foreach ( array_keys( Settings::CONSTANTS ) as $field ) {
+			$previous = isset( $saved[ $field ] ) && is_string( $saved[ $field ] ) ? $saved[ $field ] : '';
+			$value    = isset( $input[ $field ] ) && is_string( $input[ $field ] ) ? $input[ $field ] : '';
+
+			if ( $this->settings->is_constant( $field ) ) {
+				$clean[ $field ] = $previous;
+			} elseif ( Settings::API_KEY === $field ) {
+				$value           = trim( sanitize_text_field( $value ) );
+				$clean[ $field ] = ! empty( $input[ self::REMOVE_KEY_FIELD ] ) ? '' : ( '' === $value ? $previous : $value );
+			} elseif ( Settings::FROM_EMAIL === $field ) {
+				$clean[ $field ] = sanitize_email( $value );
+				if ( '' !== trim( $value ) && '' === $clean[ $field ] ) {
+					add_settings_error( Settings::OPTION, 'from_email', __( 'The From address is not a valid email address, so it was not saved.', 'connector-for-sendora' ) );
+				}
+			} else {
+				$clean[ $field ] = trim( sanitize_text_field( $value ) );
+			}
+		}
+		return $clean;
+	}
+
+	/** Shows the page. */
+	public function render(): void {
+		if ( ! current_user_can( self::CAPABILITY ) ) {
+			return;
+		}
+		echo '<div class="wrap">';
+		echo '<h1>' . esc_html__( 'Sendora', 'connector-for-sendora' ) . '</h1>';
+
+		$this->render_status();
+		$this->render_test_result();
+
+		echo '<form method="post" action="' . esc_url( admin_url( 'options.php' ) ) . '">';
+		settings_fields( self::GROUP );
+		echo '<table class="form-table" role="presentation"><tbody>';
+		$this->render_api_key_row();
+		$this->render_row(
+			Settings::TRANSACTIONAL_STREAM,
+			__( 'Transactional stream id', 'connector-for-sendora' ),
+			__( "The stream this site's email goes on. Empty: the server's default transactional stream.", 'connector-for-sendora' )
+		);
+		$this->render_row(
+			Settings::BROADCAST_STREAM,
+			__( 'Broadcast stream id', 'connector-for-sendora' ),
+			__( 'The stream for newsletters and other bulk mail.', 'connector-for-sendora' )
+		);
+		$this->render_row(
+			Settings::FROM_EMAIL,
+			__( 'From address', 'connector-for-sendora' ),
+			__( "Used when a message names no sender. Its domain must be one of your Sendora server's verified sending domains.", 'connector-for-sendora' ),
+			'email'
+		);
+		$this->render_row(
+			Settings::FROM_NAME,
+			__( 'From name', 'connector-for-sendora' ),
+			__( 'Used when a message names no sender.', 'connector-for-sendora' )
+		);
+		echo '</tbody></table>';
+		submit_button();
+		echo '</form>';
+
+		$this->render_test_form();
+		echo '</div>';
+	}
+
+	/** Shows the test-mode notice on every admin screen, to whoever manages the settings. */
+	public function test_mode_notice(): void {
+		if ( ! $this->settings->is_test_mode() || ! current_user_can( self::CAPABILITY ) ) {
+			return;
+		}
+		// The page itself says so in its own status.
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( null !== $screen && self::SCREEN === $screen->id ) {
+			return;
+		}
+		printf(
+			'<div class="notice notice-warning"><p>%s <a href="%s">%s</a></p></div>',
+			esc_html__( 'Sendora is in test mode: the API key belongs to a test server, which accepts email but delivers none of it.', 'connector-for-sendora' ),
+			esc_url( self::url() ),
+			esc_html__( 'Sendora settings', 'connector-for-sendora' )
+		);
+	}
+
+	/** Sends the test email, then returns to the page with its result. */
+	public function send_test_email(): void {
+		if ( ! current_user_can( self::CAPABILITY ) ) {
+			wp_die( esc_html__( 'You are not allowed to send a test email.', 'connector-for-sendora' ), '', array( 'response' => 403 ) );
+		}
+		check_admin_referer( self::TEST_ACTION );
+
+		$to     = isset( $_POST['to'] ) ? sanitize_email( wp_unslash( $_POST['to'] ) ) : '';
+		$result = $this->test_email( $to );
+
+		set_transient( self::test_result_key(), $result, self::TEST_RESULT_TTL );
+		wp_safe_redirect( add_query_arg( self::TEST_RESULT_ARG, '1', self::url() ) );
+		exit;
+	}
+
+	/**
+	 * Sends a test email to the address, and answers how it went.
+	 *
+	 * @param string $to The recipient.
+	 * @return array{sent: bool, message: string}
+	 */
+	public function test_email( string $to ): array {
+		if ( '' === $to ) {
+			return array(
+				'sent'    => false,
+				'message' => __( 'Enter a valid email address to send the test email to.', 'connector-for-sendora' ),
+			);
+		}
+		if ( ! $this->settings->is_configured() ) {
+			return array(
+				'sent'    => false,
+				'message' => __( 'Save an API key first: without one, WordPress sends email on its own.', 'connector-for-sendora' ),
+			);
+		}
+
+		$error  = null;
+		$record = static function ( WP_Error $failure ) use ( &$error ): void {
+			$error = $failure;
+		};
+		add_action( 'wp_mail_failed', $record );
+		$sent = wp_mail(
+			$to,
+			__( 'Test email from Connector for Sendora', 'connector-for-sendora' ),
+			sprintf(
+				/* translators: %s: the site's name. */
+				__( 'This test email was sent through Sendora by %s.', 'connector-for-sendora' ),
+				get_bloginfo( 'name' )
+			)
+		);
+		remove_action( 'wp_mail_failed', $record );
+
+		if ( $sent ) {
+			$message = $this->settings->is_test_mode()
+				/* translators: %s: the recipient's email address. */
+				? __( 'Sendora accepted the test email to %s. The key is a test key, so it will not be delivered.', 'connector-for-sendora' )
+				/* translators: %s: the recipient's email address. */
+				: __( 'Sendora accepted the test email to %s.', 'connector-for-sendora' );
+			return array(
+				'sent'    => true,
+				'message' => sprintf( $message, $to ),
+			);
+		}
+		return array(
+			'sent'    => false,
+			'message' => sprintf(
+				/* translators: %s: the reason the send failed. */
+				__( 'The test email was not sent: %s', 'connector-for-sendora' ),
+				$error instanceof WP_Error ? $error->get_error_message() : __( 'an unknown error.', 'connector-for-sendora' )
+			),
+		);
+	}
+
+	/** The page's address. */
+	public static function url(): string {
+		return admin_url( 'options-general.php?page=' . self::SLUG );
+	}
+
+	/** Whether the plugin is sending, and in which mode. */
+	private function render_status(): void {
+		if ( ! $this->settings->is_configured() ) {
+			echo '<div class="notice notice-info inline"><p>' . esc_html__( 'Not sending: until an API key is set, WordPress sends email as it would without this plugin.', 'connector-for-sendora' ) . '</p></div>';
+			return;
+		}
+		if ( $this->settings->is_test_mode() ) {
+			echo '<div class="notice notice-warning inline"><p><strong>' . esc_html__( 'Test mode.', 'connector-for-sendora' ) . '</strong> ' . esc_html__( 'The API key belongs to a Sendora test server: it accepts email and delivers none of it.', 'connector-for-sendora' ) . '</p></div>';
+			return;
+		}
+		echo '<div class="notice notice-success inline"><p>' . esc_html__( "Sending: the site's email goes through Sendora.", 'connector-for-sendora' ) . '</p></div>';
+	}
+
+	/** The last test email's result, once, when the page is shown after one. */
+	private function render_test_result(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- only picks which notice to show; the result itself is the user's own transient.
+		if ( ! isset( $_GET[ self::TEST_RESULT_ARG ] ) ) {
+			return;
+		}
+		$result = get_transient( self::test_result_key() );
+		delete_transient( self::test_result_key() );
+		if ( ! is_array( $result ) || ! isset( $result['sent'], $result['message'] ) ) {
+			return;
+		}
+		printf(
+			'<div class="notice %s is-dismissible"><p>%s</p></div>',
+			$result['sent'] ? 'notice-success' : 'notice-error',
+			esc_html( (string) $result['message'] )
+		);
+	}
+
+	/** The API key's row: never shows the key, only whether one is saved. */
+	private function render_api_key_row(): void {
+		$id = 'connector-for-sendora-' . Settings::API_KEY;
+		echo '<tr><th scope="row"><label for="' . esc_attr( $id ) . '">' . esc_html__( 'API key', 'connector-for-sendora' ) . '</label>';
+		if ( $this->settings->is_test_mode() ) {
+			echo ' <span class="connector-for-sendora-test-mode">(' . esc_html__( 'test mode', 'connector-for-sendora' ) . ')</span>';
+		}
+		echo '</th><td>';
+
+		if ( $this->settings->is_constant( Settings::API_KEY ) ) {
+			echo '<input type="password" id="' . esc_attr( $id ) . '" class="regular-text" value="" placeholder="' . esc_attr__( 'Set in wp-config.php', 'connector-for-sendora' ) . '" readonly disabled />';
+			echo '<p class="description">' . esc_html( self::constant_note( Settings::API_KEY ) ) . '</p></td></tr>';
+			return;
+		}
+
+		$saved = '' !== $this->settings->get( Settings::API_KEY );
+		printf(
+			'<input type="password" id="%s" name="%s" class="regular-text" value="" autocomplete="off" placeholder="%s" />',
+			esc_attr( $id ),
+			esc_attr( Settings::OPTION . '[' . Settings::API_KEY . ']' ),
+			esc_attr( $saved ? __( 'A key is saved; enter a new one to replace it', 'connector-for-sendora' ) : 'sk_live_…' )
+		);
+		echo '<p class="description">' . esc_html__( "A server key from Sendora's dashboard. A test server's key (sk_test_…) sends nothing to anyone.", 'connector-for-sendora' ) . '</p>';
+		if ( $saved ) {
+			printf(
+				'<p><label><input type="checkbox" name="%s" value="1" /> %s</label></p>',
+				esc_attr( Settings::OPTION . '[' . self::REMOVE_KEY_FIELD . ']' ),
+				esc_html__( 'Remove the saved key', 'connector-for-sendora' )
+			);
+		}
+		echo '</td></tr>';
+	}
+
+	/**
+	 * A text field's row, read-only when a constant sets it.
+	 *
+	 * @param string $field       The setting.
+	 * @param string $label       Its label.
+	 * @param string $description What it is for.
+	 * @param string $type        The input's type.
+	 */
+	private function render_row( string $field, string $label, string $description, string $type = 'text' ): void {
+		$id       = 'connector-for-sendora-' . $field;
+		$constant = $this->settings->is_constant( $field );
+		echo '<tr><th scope="row"><label for="' . esc_attr( $id ) . '">' . esc_html( $label ) . '</label></th><td>';
+		printf(
+			'<input type="%s" id="%s" %s class="regular-text" value="%s" %s />',
+			esc_attr( $type ),
+			esc_attr( $id ),
+			$constant ? '' : 'name="' . esc_attr( Settings::OPTION . '[' . $field . ']' ) . '"',
+			esc_attr( $this->settings->get( $field ) ),
+			$constant ? 'readonly disabled' : ''
+		);
+		echo '<p class="description">' . esc_html( $constant ? self::constant_note( $field ) : $description ) . '</p>';
+		echo '</td></tr>';
+	}
+
+	/** The form that sends a test email. */
+	private function render_test_form(): void {
+		echo '<h2>' . esc_html__( 'Send a test email', 'connector-for-sendora' ) . '</h2>';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		echo '<input type="hidden" name="action" value="' . esc_attr( self::TEST_ACTION ) . '" />';
+		wp_nonce_field( self::TEST_ACTION );
+		$user = wp_get_current_user();
+		printf(
+			'<p><label for="connector-for-sendora-test-to">%s</label> <input type="email" id="connector-for-sendora-test-to" name="to" class="regular-text" value="%s" required /></p>',
+			esc_html__( 'Send to', 'connector-for-sendora' ),
+			esc_attr( $user->user_email )
+		);
+		submit_button( __( 'Send test email', 'connector-for-sendora' ), 'secondary', 'submit', false, $this->settings->is_configured() ? '' : array( 'disabled' => 'disabled' ) );
+		echo '</form>';
+	}
+
+	/**
+	 * Says which constant sets the field.
+	 *
+	 * @param string $field The setting.
+	 */
+	private static function constant_note( string $field ): string {
+		return sprintf(
+			/* translators: %s: the constant's name. */
+			__( 'Set by %s in wp-config.php.', 'connector-for-sendora' ),
+			Settings::CONSTANTS[ $field ]
+		);
+	}
+
+	/** Where the current user's last test result waits. */
+	private static function test_result_key(): string {
+		return 'connector_for_sendora_test_' . get_current_user_id();
+	}
+}
