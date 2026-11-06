@@ -2,15 +2,15 @@
 /**
  * The webhook deliveries being handled or already handled.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Webhook;
+namespace SendoraWP\Webhook;
 
-use ConnectorForSendora\Database\QueryFailed;
-use ConnectorForSendora\Database\Schema;
+use SendoraWP\Database\QueryFailed;
+use SendoraWP\Database\Schema;
 
 /**
  * Sendora delivers each event at least once, so a delivery's id is
@@ -48,7 +48,7 @@ final class DeliveryLog {
 	private const STATUS_DONE = 'done';
 
 	/** The table's name without the site's prefix. */
-	private const TABLE = 'connector_for_sendora_webhook_deliveries';
+	private const TABLE = 'sendora_webhook_deliveries';
 
 	/** How a time is written in the table, always in UTC. */
 	private const DATE_FORMAT = 'Y-m-d H:i:s';

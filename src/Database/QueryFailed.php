@@ -2,12 +2,12 @@
 /**
  * A query on the plugin's tables that the database refused.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Database;
+namespace SendoraWP\Database;
 
 use RuntimeException;
 

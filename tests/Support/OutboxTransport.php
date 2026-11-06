@@ -2,16 +2,16 @@
 /**
  * The local site's stand-in for Sendora.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Tests\Support;
+namespace SendoraWP\Tests\Support;
 
-use ConnectorForSendora\Mail\Address;
-use ConnectorForSendora\Mail\Message;
-use ConnectorForSendora\Mail\Transport;
+use SendoraWP\Mail\Address;
+use SendoraWP\Mail\Message;
+use SendoraWP\Mail\Transport;
 
 /**
  * Keeps the last messages in an option instead of sending them, so a local

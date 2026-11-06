@@ -2,20 +2,20 @@
 /**
  * Tests for sending with Sendora's SDK.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Tests\Integration;
+namespace SendoraWP\Tests\Integration;
 
-use ConnectorForSendora\Mail\Address;
-use ConnectorForSendora\Mail\Attachment;
-use ConnectorForSendora\Mail\Message;
-use ConnectorForSendora\Mail\SendFailed;
-use ConnectorForSendora\Plugin;
-use ConnectorForSendora\Sendora\SendoraTransport;
-use ConnectorForSendora\Settings\Settings;
+use SendoraWP\Mail\Address;
+use SendoraWP\Mail\Attachment;
+use SendoraWP\Mail\Message;
+use SendoraWP\Mail\SendFailed;
+use SendoraWP\Plugin;
+use SendoraWP\Sendora\SendoraTransport;
+use SendoraWP\Settings\Settings;
 
 /**
  * Drives the SDK through WordPress's HTTP API, with a `pre_http_request`
@@ -137,7 +137,7 @@ final class SendoraTransportTest extends TestCase {
 	public function test_without_a_transport_filter_the_plugin_sends_through_sendora(): void {
 		remove_all_filters( Plugin::TRANSPORT_FILTER );
 
-		$this->assertInstanceOf( SendoraTransport::class, Plugin::transport( self::with_constants( array( 'CONNECTOR_FOR_SENDORA_API_KEY' => self::LIVE_KEY ) ) ) );
+		$this->assertInstanceOf( SendoraTransport::class, Plugin::transport( self::with_constants( array( 'SENDORA_API_KEY' => self::LIVE_KEY ) ) ) );
 	}
 
 	public function test_wp_mail_reaches_sendora_s_api_through_the_plugin(): void {

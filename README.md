@@ -1,4 +1,4 @@
-# Connector for Sendora
+# Sendora
 
 A WordPress plugin that sends the site's email through [Sendora](https://sendora.se)'s API instead of PHP `mail()` or SMTP.
 
@@ -10,14 +10,14 @@ Each setting can be saved on the settings page, or set in `wp-config.php`, which
 
 | Setting | Constant |
 |---|---|
-| API key | `CONNECTOR_FOR_SENDORA_API_KEY` |
-| Transactional stream id (empty: the server's default) | `CONNECTOR_FOR_SENDORA_TRANSACTIONAL_STREAM` |
-| Broadcast stream id | `CONNECTOR_FOR_SENDORA_BROADCAST_STREAM` |
-| Default From address | `CONNECTOR_FOR_SENDORA_FROM_EMAIL` |
-| Default From name | `CONNECTOR_FOR_SENDORA_FROM_NAME` |
-| Webhook signing secret | `CONNECTOR_FOR_SENDORA_WEBHOOK_SECRET` |
+| API key | `SENDORA_API_KEY` |
+| Transactional stream id (empty: the server's default) | `SENDORA_TRANSACTIONAL_STREAM` |
+| Broadcast stream id | `SENDORA_BROADCAST_STREAM` |
+| Default From address | `SENDORA_FROM_EMAIL` |
+| Default From name | `SENDORA_FROM_NAME` |
+| Webhook signing secret | `SENDORA_WEBHOOK_SECRET` |
 
-Settings saved on the page are kept in the option `connector_for_sendora_settings`. A saved API key or signing secret is never shown again. A test server's key (`sk_test_…`) puts the plugin in test mode: Sendora accepts the mail and delivers none of it.
+Settings saved on the page are kept in the option `sendora_settings`. A saved API key or signing secret is never shown again. A test server's key (`sk_test_…`) puts the plugin in test mode: Sendora accepts the mail and delivers none of it.
 
 A sent message fires `wp_mail_succeeded` with the message's data and `sendora_message_ids`, the ids Sendora gave it: one, or one per recipient for a broadcast or a message with only Bcc recipients, which go to each recipient alone.
 
@@ -27,12 +27,12 @@ A failed send makes `wp_mail()` return false and fires `wp_mail_failed` with a `
 
 Every message goes on the transactional stream unless something asks for the broadcast stream:
 
-- the filter `connector_for_sendora_stream` returns `'broadcast'`. It receives the current choice, `'transactional'` or `'broadcast'`, and the full `wp_mail()` arguments, so a newsletter plugin can recognise its own messages;
+- the filter `sendora_stream` returns `'broadcast'`. It receives the current choice, `'transactional'` or `'broadcast'`, and the full `wp_mail()` arguments, so a newsletter plugin can recognise its own messages;
 - the message carries the header `X-Sendora-Stream: broadcast`, for plugins that can only add headers. The header is never sent.
 
 Any other value means transactional. Sendora's rules for a broadcast are enforced before it is sent:
 
-- The filter `connector_for_sendora_broadcast_message` gets the `ConnectorForSendora\Mail\Message` and the `wp_mail()` arguments first, and returns the message to send, for instance with `{{ unsubscribe_url }}` in place of its own unsubscribe link (`$message->with_text()`, `$message->with_html()`). The message stays on the broadcast stream whatever the returned one says.
+- The filter `sendora_broadcast_message` gets the `SendoraWP\Mail\Message` and the `wp_mail()` arguments first, and returns the message to send, for instance with `{{ unsubscribe_url }}` in place of its own unsubscribe link (`$message->with_text()`, `$message->with_html()`). The message stays on the broadcast stream whatever the returned one says.
 - An HTML-only message gets a text part written from its HTML, in which a link keeps its address: `<a href="{{ unsubscribe_url }}">Unsubscribe</a>` becomes `Unsubscribe ({{ unsubscribe_url }})`.
 - A text or HTML part without `{{ unsubscribe_url }}` is refused. Sendora puts each recipient's own unsubscribe link there.
 - `List-Unsubscribe` and `List-Unsubscribe-Post` headers are removed: Sendora sets them.
@@ -42,13 +42,13 @@ A refused broadcast, or one on a site with no broadcast stream set, is never sen
 
 ### Delivery reports and the suppression list
 
-Sendora reports bounces, complaints and unsubscribes to the webhook `POST /wp-json/connector-for-sendora/v1/webhook`. Create a webhook with that address in Sendora's dashboard, subscribe it to `bounced`, `spam_complaint` and `unsubscribed`, and save its signing secret on the settings page, which shows the address too. Without a secret the webhook answers 503, so Sendora keeps retrying. A delivery whose signature is wrong, missing or older than five minutes is answered 400. Sendora delivers at least once: a delivery already handled is answered 200 and changes nothing. A delivery another request is handling is answered 503 (`connector_for_sendora_delivery_in_progress`), and one whose handling fails, or that the database refuses, is answered 503 (`connector_for_sendora_delivery_failed`) and left unhandled; Sendora retries both. A handling that never finished, because PHP stopped on the way, is taken over by a retry after five minutes.
+Sendora reports bounces, complaints and unsubscribes to the webhook `POST /wp-json/sendora/v1/webhook`. Create a webhook with that address in Sendora's dashboard, subscribe it to `bounced`, `spam_complaint` and `unsubscribed`, and save its signing secret on the settings page, which shows the address too. Without a secret the webhook answers 503, so Sendora keeps retrying. A delivery whose signature is wrong, missing or older than five minutes is answered 400. Sendora delivers at least once: a delivery already handled is answered 200 and changes nothing. A delivery another request is handling is answered 503 (`sendora_delivery_in_progress`), and one whose handling fails, or that the database refuses, is answered 503 (`sendora_delivery_failed`) and left unhandled; Sendora retries both. A handling that never finished, because PHP stopped on the way, is taken over by a retry after five minutes.
 
-Each address that bounced for good, complained or unsubscribed goes on a suppression list in its own table (`{prefix}connector_for_sendora_suppressions`), in lower case, with its reason (`bounced`, `complained`, `unsubscribed`), its source (`webhook`, `import`, `manual`), the Sendora stream the event came from, and when.
+Each address that bounced for good, complained or unsubscribed goes on a suppression list in its own table (`{prefix}sendora_suppressions`), in lower case, with its reason (`bounced`, `complained`, `unsubscribed`), its source (`webhook`, `import`, `manual`), the Sendora stream the event came from, and when.
 
 - A hard bounce stops all mail to the address. A complaint or an unsubscribe stops broadcasts only, so a password reset still arrives. A soft bounce stops nothing.
 - A send leaves suppressed recipients out. The data of `wp_mail_succeeded` and `wp_mail_failed` lists them in `sendora_suppressed`, address to reason. When every recipient is left out, `wp_mail()` returns false and fires `wp_mail_failed` with a `WP_Error` that names them and whose `sendora_error_code` is `recipient_suppressed`.
-- The filter `connector_for_sendora_is_suppressed` has the last word. It receives whether the list skips the address, the address in lower case, the stream (`'transactional'` or `'broadcast'`) and the reason or null, and returns true to skip it.
+- The filter `sendora_is_suppressed` has the last word. It receives whether the list skips the address, the address in lower case, the stream (`'transactional'` or `'broadcast'`) and the reason or null, and returns true to skip it.
 - **Tools → Sendora suppressions** lists the addresses, with a search, removes one, and imports an address verifier's results (below). Sendora keeps a suppression list of its own, which this does not change: only Sendora's support can take an address off it after a complaint or an unsubscribe.
 
 ### Cleaning a list before the first send
@@ -56,8 +56,8 @@ Each address that bounced for good, complained or unsubscribed goes on a suppres
 Sendora requires hard bounces to stay below 5 % of the messages sent, and an old list often fails that on the first send. Run the list through an address verifier, then import its results: each address whose status suppresses goes on the suppression list as `bounced`, source `import`. An address already on the list as a hard bounce is left as it is, so importing the same file again changes nothing.
 
 ```sh
-wp connector-for-sendora import results.csv           # dry run: counts only, writes nothing
-wp connector-for-sendora import results.csv --apply   # writes
+wp sendora import results.csv           # dry run: counts only, writes nothing
+wp sendora import results.csv --apply   # writes
 ```
 
 The file is CSV with a header row, separated by commas, semicolons or tabs; a UTF-8 byte order mark is fine. Options:
@@ -83,8 +83,8 @@ Options for known verifiers' exports:
 
 For other plugins, such as a newsletter keeping its subscribers in step:
 
-- `connector_for_sendora_event` fires for every verified event, with its type (`'delivered'`, `'bounced'`, …) and its payload as Sendora sent it;
-- `connector_for_sendora_bounced` (hard bounces only), `connector_for_sendora_complained` and `connector_for_sendora_unsubscribed` fire with the address in lower case and the payload, once the address is on the list.
+- `sendora_event` fires for every verified event, with its type (`'delivered'`, `'bounced'`, …) and its payload as Sendora sent it;
+- `sendora_bounced` (hard bounces only), `sendora_complained` and `sendora_unsubscribed` fire with the address in lower case and the payload, once the address is on the list.
 
 ### Newsletter plugins
 
@@ -96,7 +96,7 @@ Deleting the plugin (not deactivating it) drops its two tables and deletes its s
 
 ### Other filters
 
-The filter `connector_for_sendora_transport` can return a `ConnectorForSendora\Mail\Transport` to send through something other than Sendora's API.
+The filter `sendora_transport` can return a `SendoraWP\Mail\Transport` to send through something other than Sendora's API.
 
 ## Development
 
@@ -104,7 +104,7 @@ The host needs Node.js and Docker only: Composer, PHPCS and PHPStan run in a thr
 
 ```sh
 npm install
-npm run composer -- install   # PHP dependencies; prefixes Sendora's SDK under ConnectorForSendora\Vendor
+npm run composer -- install   # PHP dependencies; prefixes Sendora's SDK under SendoraWP\Vendor
 npm run env:start             # WordPress at WP_ENV_PORT (8888), its tests site at WP_ENV_TESTS_PORT (8889)
 npm run check                 # the gate: lint, stan, test, plugin-check
 npm run env:stop
@@ -117,12 +117,12 @@ Set `WP_ENV_PORT` and `WP_ENV_TESTS_PORT` to run several checkouts at once.
 ### Building and releasing
 
 ```sh
-npm run make-pot              # languages/connector-for-sendora.pot from the working tree
-npm run build                 # build/connector-for-sendora/ and build/connector-for-sendora.zip
+npm run make-pot              # languages/sendora.pot from the working tree
+npm run build                 # build/sendora/ and build/sendora.zip
 node bin/build.mjs v1.2.3     # the same, refusing unless the plugin's files say 1.2.3
 ```
 
-The build holds the files git knows less those in `.distignore`, production packages only with Sendora's SDK and its dependencies prefixed under `ConnectorForSendora\Vendor`, and the translation template. It refuses to build when the version in the plugin header, `CONNECTOR_FOR_SENDORA_VERSION`, `readme.txt`'s stable tag and `package.json` differ. CI builds the zip and the template on every pull request.
+The build holds the files git knows less those in `.distignore`, production packages only with Sendora's SDK and its dependencies prefixed under `SendoraWP\Vendor`, and the translation template. It refuses to build when the version in the plugin header, `SENDORA_VERSION`, `readme.txt`'s stable tag and `package.json` differ. CI builds the zip and the template on every pull request.
 
 To release, raise the version in those four places and add a changelog entry to `readme.txt`, merge, then push a tag `v<version>`. The release workflow builds the zip and attaches it to a GitHub release. It also deploys to the wordpress.org plugin directory when the repository variable `WPORG_DEPLOY` is `true` and the secrets `SVN_USERNAME` and `SVN_PASSWORD` are set (in the `wordpress.org` environment or the repository); banners, icons and screenshots for the directory go in `.wordpress-org/`.
 
@@ -130,6 +130,6 @@ To release, raise the version in those four places and add a changelog entry to 
 
 Tests and local sites never use a Sendora key or Sendora's API:
 
-- Every script in `bin/` refuses to run with `CONNECTOR_FOR_SENDORA_API_KEY`, `SENDORA_API_TOKEN`, `SENDORA_BASE_URL`, `SENDORA_API_KEY` or `SENDORA_API_URL` set, and so does the PHPUnit bootstrap inside the container, which also refuses a defined `CONNECTOR_FOR_SENDORA_API_KEY` constant.
+- Every script in `bin/` refuses to run with `SENDORA_API_KEY`, `SENDORA_API_TOKEN`, `SENDORA_BASE_URL` or `SENDORA_API_URL` set, and so does the PHPUnit bootstrap inside the container, which also refuses a defined `SENDORA_API_KEY` constant.
 - The SDK sends through WordPress's HTTP API, and the PHPUnit bootstrap refuses every request to a host other than this machine before it leaves. Tests send through an in-memory fake, or answer the SDK's requests themselves.
-- On the wp-env sites, a must-use plugin (`tests/mu-plugins/`) swaps in a fake that keeps the last messages in the option `connector_for_sendora_dev_outbox` (`npx wp-env run cli wp option get connector_for_sendora_dev_outbox --format=json`), and refuses every request to Sendora's hosts.
+- On the wp-env sites, a must-use plugin (`tests/mu-plugins/`) swaps in a fake that keeps the last messages in the option `sendora_dev_outbox` (`npx wp-env run cli wp option get sendora_dev_outbox --format=json`), and refuses every request to Sendora's hosts.

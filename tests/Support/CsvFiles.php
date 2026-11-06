@@ -2,12 +2,12 @@
 /**
  * Temporary CSV files for import tests.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Tests\Support;
+namespace SendoraWP\Tests\Support;
 
 /**
  * Writes text to a temporary file and deletes what it wrote when asked.

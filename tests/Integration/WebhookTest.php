@@ -2,18 +2,18 @@
 /**
  * Tests for the delivery report webhook.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Tests\Integration;
+namespace SendoraWP\Tests\Integration;
 
-use ConnectorForSendora\Settings\Settings;
-use ConnectorForSendora\Suppression\SuppressionList;
-use ConnectorForSendora\Tests\Support\WebhookDeliveries;
-use ConnectorForSendora\Webhook\DeliveryLog;
-use ConnectorForSendora\Webhook\Webhook;
+use SendoraWP\Settings\Settings;
+use SendoraWP\Suppression\SuppressionList;
+use SendoraWP\Tests\Support\WebhookDeliveries;
+use SendoraWP\Webhook\DeliveryLog;
+use SendoraWP\Webhook\Webhook;
 use WP_REST_Request;
 use WP_REST_Response;
 
@@ -74,7 +74,7 @@ final class WebhookTest extends TestCase {
 
 	public function test_the_secret_can_come_from_a_constant(): void {
 		$this->configure();
-		$webhook = new Webhook( self::with_constants( array( 'CONNECTOR_FOR_SENDORA_WEBHOOK_SECRET' => WebhookDeliveries::SECRET ) ), $this->list, new DeliveryLog() );
+		$webhook = new Webhook( self::with_constants( array( 'SENDORA_WEBHOOK_SECRET' => WebhookDeliveries::SECRET ) ), $this->list, new DeliveryLog() );
 
 		$response = self::answer( $webhook, WebhookDeliveries::request( WebhookDeliveries::bounced( 'anna@example.com' ) ) );
 
@@ -178,7 +178,7 @@ final class WebhookTest extends TestCase {
 		$retry = $this->dispatch( WebhookDeliveries::request( $payload ) );
 
 		$this->assertSame( self::STATUS_UNAVAILABLE, $failed->get_status() );
-		$this->assertSame( 'connector_for_sendora_delivery_failed', $failed->get_data()['code'] );
+		$this->assertSame( 'sendora_delivery_failed', $failed->get_data()['code'] );
 		$this->assertSame( self::STATUS_OK, $retry->get_status() );
 		$this->assertSame( array( 'duplicate' => false ), $retry->get_data() );
 	}
@@ -190,7 +190,7 @@ final class WebhookTest extends TestCase {
 		$this->restore_writes();
 
 		$this->assertSame( self::STATUS_UNAVAILABLE, $response->get_status() );
-		$this->assertSame( 'connector_for_sendora_delivery_failed', $response->get_data()['code'] );
+		$this->assertSame( 'sendora_delivery_failed', $response->get_data()['code'] );
 		$this->assertNull( $this->list->reason( 'anna@example.com', 'transactional' ) );
 	}
 
@@ -223,7 +223,7 @@ final class WebhookTest extends TestCase {
 		$response = $this->dispatch( WebhookDeliveries::request( $payload ) );
 
 		$this->assertSame( self::STATUS_UNAVAILABLE, $response->get_status() );
-		$this->assertSame( 'connector_for_sendora_delivery_in_progress', $response->get_data()['code'] );
+		$this->assertSame( 'sendora_delivery_in_progress', $response->get_data()['code'] );
 		$this->assertNull( $this->list->reason( 'anna@example.com', 'transactional' ) );
 	}
 

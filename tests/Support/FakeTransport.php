@@ -2,16 +2,16 @@
 /**
  * An in-memory stand-in for Sendora.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Tests\Support;
+namespace SendoraWP\Tests\Support;
 
-use ConnectorForSendora\Mail\Message;
-use ConnectorForSendora\Mail\SendFailed;
-use ConnectorForSendora\Mail\Transport;
+use SendoraWP\Mail\Message;
+use SendoraWP\Mail\SendFailed;
+use SendoraWP\Mail\Transport;
 
 /**
  * Keeps every message it is given, and answers with an id, or with the

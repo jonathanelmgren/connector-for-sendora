@@ -2,12 +2,12 @@
 /**
  * One message, as wp_mail() was asked to send it.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Mail;
+namespace SendoraWP\Mail;
 
 /**
  * A message ready for a transport: every address parsed, the body split

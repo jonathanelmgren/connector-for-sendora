@@ -2,14 +2,14 @@
 /**
  * Webhook deliveries as Sendora sends them, signed with a test secret.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Tests\Support;
+namespace SendoraWP\Tests\Support;
 
-use ConnectorForSendora\Webhook\Webhook;
+use SendoraWP\Webhook\Webhook;
 use WP_REST_Request;
 
 /**

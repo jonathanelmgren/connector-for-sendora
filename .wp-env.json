@@ -8,7 +8,7 @@
 	],
 	"mappings": {
 		"wp-content/mu-plugins": "./tests/mu-plugins",
-		"wp-content/connector-for-sendora-tests": "./tests"
+		"wp-content/sendora-tests": "./tests"
 	},
 	"config": {
 		"WP_DEBUG": true,

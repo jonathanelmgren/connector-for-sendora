@@ -2,14 +2,14 @@
 /**
  * Tests for the test suite's own guards.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Tests\Integration;
+namespace SendoraWP\Tests\Integration;
 
-use ConnectorForSendora\Tests\Support\SendoraGuard;
+use SendoraWP\Tests\Support\SendoraGuard;
 use WP_Error;
 use WpOrg\Requests\Exception as RequestsException;
 
@@ -42,7 +42,7 @@ final class SendoraGuardTest extends TestCase {
 			static fn ( string $name ): bool => SendoraGuard::KEY_CONSTANT === $name
 		);
 
-		$this->assertSame( array( 'The constant CONNECTOR_FOR_SENDORA_API_KEY is defined.' ), $violations );
+		$this->assertSame( array( 'The constant SENDORA_API_KEY is defined.' ), $violations );
 	}
 
 	public function test_a_request_to_sendora_is_refused(): void {

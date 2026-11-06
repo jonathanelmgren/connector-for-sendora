@@ -2,19 +2,19 @@
 /**
  * Sendora's rules for mail on a broadcast stream.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Mail;
+namespace SendoraWP\Mail;
 
 /**
  * Makes a broadcast fit Sendora's rules, or refuses it. Sendora puts each
  * recipient's own unsubscribe link where `{{ unsubscribe_url }}` stands,
  * and sets the `List-Unsubscribe` headers itself. So a broadcast:
  *
- * - is first passed through the `connector_for_sendora_broadcast_message`
+ * - is first passed through the `sendora_broadcast_message`
  *   filter, which can rewrite it, for instance to put the placeholder in
  *   place of an unsubscribe link of its own;
  * - gets a text part written from its HTML when it has HTML only;
@@ -26,7 +26,7 @@ namespace ConnectorForSendora\Mail;
 final class Broadcast {
 
 	/** The filter that can rewrite a broadcast before its checks. */
-	public const MESSAGE_FILTER = 'connector_for_sendora_broadcast_message';
+	public const MESSAGE_FILTER = 'sendora_broadcast_message';
 
 	/** Where Sendora puts a recipient's unsubscribe link. */
 	public const UNSUBSCRIBE_PLACEHOLDER = '{{ unsubscribe_url }}';
@@ -54,7 +54,7 @@ final class Broadcast {
 		 * Filters a message on the broadcast stream before Sendora's rules are
 		 * checked: return the message as it should be sent, for instance with
 		 * `{{ unsubscribe_url }}` in place of an unsubscribe link of your own.
-		 * Anything other than a `ConnectorForSendora\Mail\Message` keeps the
+		 * Anything other than a `SendoraWP\Mail\Message` keeps the
 		 * message as it was. The message stays on the broadcast stream
 		 * whatever stream the returned one names.
 		 *
@@ -66,7 +66,7 @@ final class Broadcast {
 		 *
 		 * @var mixed $filtered
 		 */
-		$filtered = apply_filters( self::MESSAGE_FILTER, $message, $atts ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- the constant is connector_for_sendora_broadcast_message.
+		$filtered = apply_filters( self::MESSAGE_FILTER, $message, $atts ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- the constant is sendora_broadcast_message.
 		if ( $filtered instanceof Message ) {
 			// The filter rewrites the content; the stream stays the one chosen, so a broadcast never leaves as transactional mail.
 			$message = $filtered->on_stream_of( $message );
@@ -77,10 +77,10 @@ final class Broadcast {
 		}
 
 		if ( null !== $message->text && ! self::has_placeholder( $message->text ) ) {
-			throw self::missing_placeholder( __( 'text', 'connector-for-sendora' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
+			throw self::missing_placeholder( __( 'text', 'sendora' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
 		}
 		if ( null !== $message->html && ! self::has_placeholder( $message->html ) ) {
-			throw self::missing_placeholder( __( 'HTML', 'connector-for-sendora' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
+			throw self::missing_placeholder( __( 'HTML', 'sendora' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
 		}
 
 		$message = $message->with_headers(
@@ -111,7 +111,7 @@ final class Broadcast {
 	private static function missing_placeholder( string $part ): SendFailed {
 		$failure = sprintf(
 			/* translators: 1: a part of the message, "text" or "HTML"; 2: the placeholder, {{ unsubscribe_url }}. */
-			__( 'The message is a broadcast, and its %1$s part does not contain %2$s, which Sendora needs on every broadcast for the recipient\'s unsubscribe link.', 'connector-for-sendora' ),
+			__( 'The message is a broadcast, and its %1$s part does not contain %2$s, which Sendora needs on every broadcast for the recipient\'s unsubscribe link.', 'sendora' ),
 			$part,
 			self::UNSUBSCRIBE_PLACEHOLDER
 		);

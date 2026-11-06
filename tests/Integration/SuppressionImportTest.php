@@ -2,20 +2,20 @@
 /**
  * Tests for the import on the suppression list's screen.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Tests\Integration;
+namespace SendoraWP\Tests\Integration;
 
-use ConnectorForSendora\Admin\SuppressionImport;
-use ConnectorForSendora\Admin\SuppressionPage;
-use ConnectorForSendora\Import\Importer;
-use ConnectorForSendora\Suppression\SuppressionList;
-use ConnectorForSendora\Tests\Support\BrokenQueries;
-use ConnectorForSendora\Tests\Support\CsvFiles;
-use ConnectorForSendora\Tests\Support\Redirected;
+use SendoraWP\Admin\SuppressionImport;
+use SendoraWP\Admin\SuppressionPage;
+use SendoraWP\Import\Importer;
+use SendoraWP\Suppression\SuppressionList;
+use SendoraWP\Tests\Support\BrokenQueries;
+use SendoraWP\Tests\Support\CsvFiles;
+use SendoraWP\Tests\Support\Redirected;
 use WPDieException;
 
 /**

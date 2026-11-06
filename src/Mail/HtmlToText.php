@@ -2,12 +2,12 @@
 /**
  * A plain-text part written from an HTML part.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Mail;
+namespace SendoraWP\Mail;
 
 /**
  * Turns an email's HTML into readable text: blocks and line breaks become

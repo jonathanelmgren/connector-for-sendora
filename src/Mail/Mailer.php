@@ -2,15 +2,15 @@
 /**
  * Sends wp_mail() through Sendora.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Mail;
+namespace SendoraWP\Mail;
 
-use ConnectorForSendora\Settings\Settings;
-use ConnectorForSendora\Suppression\SuppressionList;
+use SendoraWP\Settings\Settings;
+use SendoraWP\Suppression\SuppressionList;
 use WP_Error;
 
 /**
@@ -146,7 +146,7 @@ final class Mailer {
 			}
 			$failure = sprintf(
 				/* translators: %s: the recipients and why each is suppressed, such as "anna@example.com (hard bounce)". */
-				__( 'Not sent: every recipient is on the suppression list: %s.', 'connector-for-sendora' ),
+				__( 'Not sent: every recipient is on the suppression list: %s.', 'sendora' ),
 				implode( ', ', $reasons )
 			);
 			throw new SendFailed( $failure, self::ERROR_ALL_SUPPRESSED ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.

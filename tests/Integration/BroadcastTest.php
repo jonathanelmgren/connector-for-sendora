@@ -2,20 +2,20 @@
 /**
  * Tests for the choice of stream and Sendora's rules for broadcasts.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Tests\Integration;
+namespace SendoraWP\Tests\Integration;
 
-use ConnectorForSendora\Mail\Address;
-use ConnectorForSendora\Mail\Broadcast;
-use ConnectorForSendora\Mail\Message;
-use ConnectorForSendora\Mail\MessageBuilder;
-use ConnectorForSendora\Mail\SendFailed;
-use ConnectorForSendora\Mail\Stream;
-use ConnectorForSendora\Settings\Settings;
+use SendoraWP\Mail\Address;
+use SendoraWP\Mail\Broadcast;
+use SendoraWP\Mail\Message;
+use SendoraWP\Mail\MessageBuilder;
+use SendoraWP\Mail\SendFailed;
+use SendoraWP\Mail\Stream;
+use SendoraWP\Settings\Settings;
 use WP_Error;
 
 /**

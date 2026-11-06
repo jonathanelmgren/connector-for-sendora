@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Builds the distributable plugin: build/connector-for-sendora/ and
-// build/connector-for-sendora.zip, the directory zipped as WordPress expects.
+// Builds the distributable plugin: build/sendora/ and
+// build/sendora.zip, the directory zipped as WordPress expects.
 //
 //   node bin/build.mjs            the version in the plugin's files
 //   node bin/build.mjs v1.2.3     also checks the files say 1.2.3, for a release tag
@@ -37,7 +37,7 @@ const COMPOSER_LOCK = 'composer.lock';
 /** Where the plugin's files state its version, and how to read it there. */
 const VERSION_SOURCES = [
 	[`${SLUG}.php`, /^\s*\*\s*Version:\s*(\S+)/m],
-	[`${SLUG}.php`, /define\(\s*'CONNECTOR_FOR_SENDORA_VERSION',\s*'([^']+)'\s*\)/],
+	[`${SLUG}.php`, /define\(\s*'SENDORA_VERSION',\s*'([^']+)'\s*\)/],
 	['readme.txt', /^Stable tag:\s*(\S+)/m],
 	['package.json', /^\s*"version":\s*"([^"]+)"/m],
 ];

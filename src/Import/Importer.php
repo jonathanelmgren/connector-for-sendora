@@ -2,15 +2,15 @@
 /**
  * Imports an address verifier's results into the suppression list.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Import;
+namespace SendoraWP\Import;
 
-use ConnectorForSendora\Database\Schema;
-use ConnectorForSendora\Suppression\SuppressionList;
+use SendoraWP\Database\Schema;
+use SendoraWP\Suppression\SuppressionList;
 use SplFileObject;
 
 /**
@@ -112,7 +112,7 @@ final class Importer {
 	 *
 	 * @param list<string> $emails The addresses a plan would add.
 	 * @return array{suppressed: list<string>, already: list<string>} The addresses added, and those that were on the list by now.
-	 * @throws \ConnectorForSendora\Database\QueryFailed The database refused the write.
+	 * @throws \SendoraWP\Database\QueryFailed The database refused the write.
 	 */
 	public function apply( array $emails ): array {
 		$emails = array_values( array_filter( array_map( array( SuppressionList::class, 'normalise' ), $emails ), array( self::class, 'valid' ) ) );

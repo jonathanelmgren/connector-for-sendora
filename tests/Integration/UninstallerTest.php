@@ -2,20 +2,20 @@
 /**
  * Tests for what deleting the plugin removes.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Tests\Integration;
+namespace SendoraWP\Tests\Integration;
 
-use ConnectorForSendora\Admin\SettingsPage;
-use ConnectorForSendora\Admin\SuppressionImport;
-use ConnectorForSendora\Database\Schema;
-use ConnectorForSendora\Settings\Settings;
-use ConnectorForSendora\Suppression\SuppressionList;
-use ConnectorForSendora\Uninstaller;
-use ConnectorForSendora\Webhook\DeliveryLog;
+use SendoraWP\Admin\SettingsPage;
+use SendoraWP\Admin\SuppressionImport;
+use SendoraWP\Database\Schema;
+use SendoraWP\Settings\Settings;
+use SendoraWP\Suppression\SuppressionList;
+use SendoraWP\Uninstaller;
+use SendoraWP\Webhook\DeliveryLog;
 
 /**
  * Uninstalling drops the tables and deletes the options and transients,

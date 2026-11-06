@@ -9,13 +9,13 @@
  * directory, which here is `vendor/` itself. The `composer dump-autoload` that
  * follows rewrites `ClassLoader.php` and the `autoload_*.php` files, but not
  * `InstalledVersions.php`, so `Composer\InstalledVersions` would stay declared
- * as `ConnectorForSendora\Vendor\Composer\InstalledVersions` and fail to load.
+ * as `SendoraWP\Vendor\Composer\InstalledVersions` and fail to load.
  * Strauss has no setting to skip that step, so the file is kept and put back.
  *
  * Strauss comes from this checkout's dev install, so the release build can run
  * it on a staging directory that holds production packages only.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);

@@ -2,12 +2,12 @@
 /**
  * An email address with an optional display name.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Mail;
+namespace SendoraWP\Mail;
 
 /**
  * One mailbox: `anna@example.com`, or `Anna Svensson <anna@example.com>`.

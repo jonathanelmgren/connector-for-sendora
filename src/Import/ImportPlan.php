@@ -2,12 +2,12 @@
 /**
  * What an import would do.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Import;
+namespace SendoraWP\Import;
 
 /**
  * The outcome of reading a verifier's export against the suppression list:
@@ -72,27 +72,27 @@ final class ImportPlan {
 	public function summary( ?array $applied = null ): array {
 		$lines = array(
 			/* translators: %d: how many rows. */
-			sprintf( _n( '%d row read.', '%d rows read.', $this->rows_read, 'connector-for-sendora' ), $this->rows_read ),
+			sprintf( _n( '%d row read.', '%d rows read.', $this->rows_read, 'sendora' ), $this->rows_read ),
 		);
 		if ( null === $applied ) {
 			$suppress = count( $this->suppress );
 			$already  = count( $this->already );
 			/* translators: %d: how many addresses. */
-			$lines[] = sprintf( _n( '%d address would be suppressed.', '%d addresses would be suppressed.', $suppress, 'connector-for-sendora' ), $suppress );
+			$lines[] = sprintf( _n( '%d address would be suppressed.', '%d addresses would be suppressed.', $suppress, 'sendora' ), $suppress );
 		} else {
 			$suppress = count( $applied['suppressed'] );
 			$already  = count( $this->already ) + count( $applied['already'] );
 			/* translators: %d: how many addresses. */
-			$lines[] = sprintf( _n( '%d address suppressed.', '%d addresses suppressed.', $suppress, 'connector-for-sendora' ), $suppress );
+			$lines[] = sprintf( _n( '%d address suppressed.', '%d addresses suppressed.', $suppress, 'sendora' ), $suppress );
 		}
 		/* translators: %d: how many addresses. */
-		$lines[] = sprintf( _n( '%d address already on the list.', '%d addresses already on the list.', $already, 'connector-for-sendora' ), $already );
+		$lines[] = sprintf( _n( '%d address already on the list.', '%d addresses already on the list.', $already, 'sendora' ), $already );
 		foreach ( $this->skipped_counts() as $reason => $count ) {
 			if ( 0 === $count ) {
 				continue;
 			}
 			/* translators: 1: how many rows, 2: why they were skipped. */
-			$lines[] = sprintf( _n( '%1$d row skipped: %2$s.', '%1$d rows skipped: %2$s.', $count, 'connector-for-sendora' ), $count, self::skip_label( $reason ) );
+			$lines[] = sprintf( _n( '%1$d row skipped: %2$s.', '%1$d rows skipped: %2$s.', $count, 'sendora' ), $count, self::skip_label( $reason ) );
 		}
 		return $lines;
 	}
@@ -104,10 +104,10 @@ final class ImportPlan {
 	 */
 	public static function skip_label( string $reason ): string {
 		return match ( $reason ) {
-			self::SKIP_STATUS          => __( 'status does not suppress', 'connector-for-sendora' ),
-			self::SKIP_NO_ADDRESS      => __( 'no address', 'connector-for-sendora' ),
-			self::SKIP_INVALID_ADDRESS => __( 'not a valid address', 'connector-for-sendora' ),
-			self::SKIP_REPEATED        => __( 'address repeated in the file', 'connector-for-sendora' ),
+			self::SKIP_STATUS          => __( 'status does not suppress', 'sendora' ),
+			self::SKIP_NO_ADDRESS      => __( 'no address', 'sendora' ),
+			self::SKIP_INVALID_ADDRESS => __( 'not a valid address', 'sendora' ),
+			self::SKIP_REPEATED        => __( 'address repeated in the file', 'sendora' ),
 			default                    => $reason,
 		};
 	}

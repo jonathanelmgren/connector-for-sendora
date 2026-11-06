@@ -3,7 +3,7 @@
  * Run by WordPress when the plugin is deleted: drops its tables and deletes
  * its options, on every site of a network.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 /*
@@ -19,10 +19,10 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 require_once __DIR__ . '/requirements.php';
 
-if ( version_compare( PHP_VERSION, CONNECTOR_FOR_SENDORA_MIN_PHP, '<' ) ) {
+if ( version_compare( PHP_VERSION, SENDORA_MIN_PHP, '<' ) ) {
 	return;
 }
 
 require_once __DIR__ . '/vendor/autoload.php';
 
-\ConnectorForSendora\Uninstaller::uninstall();
+\SendoraWP\Uninstaller::uninstall();

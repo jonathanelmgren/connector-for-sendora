@@ -2,16 +2,16 @@
 /**
  * The base of the integration tests.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Tests\Integration;
+namespace SendoraWP\Tests\Integration;
 
-use ConnectorForSendora\Plugin;
-use ConnectorForSendora\Settings\Settings;
-use ConnectorForSendora\Tests\Support\FakeTransport;
+use SendoraWP\Plugin;
+use SendoraWP\Settings\Settings;
+use SendoraWP\Tests\Support\FakeTransport;
 use WP_UnitTestCase;
 
 /**

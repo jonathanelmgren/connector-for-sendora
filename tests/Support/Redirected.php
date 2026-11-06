@@ -2,12 +2,12 @@
 /**
  * A redirect, caught before the handler exits.
  *
- * @package ConnectorForSendora
+ * @package SendoraWP
  */
 
 declare(strict_types=1);
 
-namespace ConnectorForSendora\Tests\Support;
+namespace SendoraWP\Tests\Support;
 
 /**
  * Thrown from the `wp_redirect` filter, so a test sees where an admin-post

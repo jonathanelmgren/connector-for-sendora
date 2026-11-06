@@ -2,7 +2,7 @@ parameters:
 	level: 8
 	phpVersion: 80200
 	paths:
-		- connector-for-sendora.php
+		- sendora.php
 		- requirements.php
 		- uninstall.php
 		- src
