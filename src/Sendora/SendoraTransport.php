@@ -28,7 +28,7 @@ final class SendoraTransport implements Transport {
 
 	/**
 	 * Sendora's API. Passed even though it is the SDK's default too: left to
-	 * itself the SDK would read the address from SENDORA_BASE_URL.
+	 * itself the SDK would read the address from SENDORA_WP_BASE_URL.
 	 */
 	public const API_URL = 'https://api.sendora.se';
 

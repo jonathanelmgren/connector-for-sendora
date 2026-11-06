@@ -131,13 +131,13 @@ final class MessageBuilder {
 		$cc  = self::addresses( array_map( $utf8, $cc ) );
 		$bcc = self::addresses( array_map( $utf8, $bcc ) );
 		if ( array() === $to && array() === $cc && array() === $bcc ) {
-			throw new SendFailed( __( 'The message has no recipient.', 'sendora' ), 'no_recipient' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
+			throw new SendFailed( __( 'The message has no recipient.', 'sendora-for-wp' ), 'no_recipient' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
 		}
 
 		$broadcast = Stream::BROADCAST === Stream::choose( $stream, $atts );
 		$stream_id = self::non_empty( $this->settings->get( $broadcast ? Settings::BROADCAST_STREAM : Settings::TRANSACTIONAL_STREAM ) );
 		if ( $broadcast && null === $stream_id ) {
-			throw new SendFailed( __( 'The message is a broadcast, and no broadcast stream is set.', 'sendora' ), self::ERROR_NO_BROADCAST_STREAM ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
+			throw new SendFailed( __( 'The message is a broadcast, and no broadcast stream is set.', 'sendora-for-wp' ), self::ERROR_NO_BROADCAST_STREAM ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
 		}
 
 		$body = $utf8( (string) ( $atts['message'] ?? '' ) );
@@ -298,7 +298,7 @@ final class MessageBuilder {
 		}
 		$failure = sprintf(
 			/* translators: %s: a charset, such as ISO-8859-1. */
-			__( 'The message is in the charset %s, which this server cannot convert to UTF-8.', 'sendora' ),
+			__( 'The message is in the charset %s, which this server cannot convert to UTF-8.', 'sendora-for-wp' ),
 			$charset
 		);
 		throw new SendFailed( $failure, self::ERROR_UNSUPPORTED_CHARSET ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.

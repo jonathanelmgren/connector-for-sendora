@@ -55,14 +55,14 @@ jobs:
       - name: Install Composer dependencies
         run: npm run composer -- install --no-interaction --no-progress
 
-      # The zip a release would attach, with languages/sendora.pot in it.
+      # The zip a release would attach, with languages/sendora-for-wp.pot in it.
       - name: Build
         run: npm run build
 
       - uses: actions/upload-artifact@v4
         with:
-          name: sendora
+          name: sendora-for-wp
           path: |
-            build/sendora.zip
-            build/sendora/languages/sendora.pot
+            build/sendora-for-wp.zip
+            build/sendora-for-wp/languages/sendora-for-wp.pot
           if-no-files-found: error

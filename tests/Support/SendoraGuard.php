@@ -27,11 +27,12 @@ final class SendoraGuard {
 
 	/**
 	 * Variables that would hand a run a Sendora key or address: the plugin's
-	 * constant's name (which other projects on the same machine use too),
-	 * the SDK's own two, and the API URL those projects use. Keep in step
+	 * constant's name, the key's name other projects on the same machine
+	 * use, the SDK's own two, and the API URL those projects use. Keep in step
 	 * with bin/env.mjs.
 	 */
 	public const VARIABLES = array(
+		'SENDORA_WP_API_KEY',
 		'SENDORA_API_KEY',
 		'SENDORA_API_TOKEN',
 		'SENDORA_BASE_URL',
@@ -39,13 +40,13 @@ final class SendoraGuard {
 	);
 
 	/** The constant wp-config.php would set the key with. */
-	public const KEY_CONSTANT = 'SENDORA_API_KEY';
+	public const KEY_CONSTANT = 'SENDORA_WP_API_KEY';
 
 	/** The only hosts a test request may go to. */
 	public const ALLOWED_HOSTS = array( 'localhost', '127.0.0.1', '::1' );
 
 	/** The error code of a refused request. */
-	public const BLOCKED = 'sendora_test_host_blocked';
+	public const BLOCKED = 'sendora_wp_test_host_blocked';
 
 	/**
 	 * The action WordPress fires before it follows a redirect: Requests'

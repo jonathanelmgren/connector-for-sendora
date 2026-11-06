@@ -137,7 +137,7 @@ final class SendoraTransportTest extends TestCase {
 	public function test_without_a_transport_filter_the_plugin_sends_through_sendora(): void {
 		remove_all_filters( Plugin::TRANSPORT_FILTER );
 
-		$this->assertInstanceOf( SendoraTransport::class, Plugin::transport( self::with_constants( array( 'SENDORA_API_KEY' => self::LIVE_KEY ) ) ) );
+		$this->assertInstanceOf( SendoraTransport::class, Plugin::transport( self::with_constants( array( 'SENDORA_WP_API_KEY' => self::LIVE_KEY ) ) ) );
 	}
 
 	public function test_wp_mail_reaches_sendora_s_api_through_the_plugin(): void {

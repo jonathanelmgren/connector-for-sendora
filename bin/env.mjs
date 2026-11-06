@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 export const root = dirname(dirname(fileURLToPath(import.meta.url)));
 
 /** The plugin's slug: its main file and text domain. */
-export const SLUG = 'sendora';
+export const SLUG = 'sendora-for-wp';
 
 /** wp-env mounts the checkout under its directory name. */
 export const pluginDir = `wp-content/plugins/${basename(root)}`;
@@ -20,12 +20,13 @@ export const COMPOSER_IMAGE = 'composer:2';
 
 /**
  * Variables that would hand a run a Sendora key or address: the plugin's
- * constant's name (which other projects on this machine use too), the SDK's
- * own two, and the API URL those projects use. A run refuses to start with
- * any of them set, so no key can reach a test, a lint or a local site from
- * the shell.
+ * constant's name, the key's name other projects on this machine use, the
+ * SDK's own two, and the API URL those projects use. A run refuses to start
+ * with any of them set, so no key can reach a test, a lint or a local site
+ * from the shell.
  */
 export const SENDORA_VARIABLES = [
+	'SENDORA_WP_API_KEY',
 	'SENDORA_API_KEY',
 	'SENDORA_API_TOKEN',
 	'SENDORA_BASE_URL',

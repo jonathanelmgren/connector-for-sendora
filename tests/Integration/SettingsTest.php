@@ -25,7 +25,7 @@ final class SettingsTest extends TestCase {
 
 	public function test_a_constant_wins_over_the_saved_value(): void {
 		$this->configure( array( Settings::FROM_EMAIL => 'saved@example.com' ) );
-		$settings = self::with_constants( array( 'SENDORA_FROM_EMAIL' => 'constant@example.com' ) );
+		$settings = self::with_constants( array( 'SENDORA_WP_FROM_EMAIL' => 'constant@example.com' ) );
 
 		$this->assertSame( 'constant@example.com', $settings->get( Settings::FROM_EMAIL ) );
 		$this->assertTrue( $settings->is_constant( Settings::FROM_EMAIL ) );
@@ -35,12 +35,12 @@ final class SettingsTest extends TestCase {
 	public function test_every_setting_has_its_constant(): void {
 		$this->assertSame(
 			array(
-				Settings::API_KEY              => 'SENDORA_API_KEY',
-				Settings::TRANSACTIONAL_STREAM => 'SENDORA_TRANSACTIONAL_STREAM',
-				Settings::BROADCAST_STREAM     => 'SENDORA_BROADCAST_STREAM',
-				Settings::FROM_EMAIL           => 'SENDORA_FROM_EMAIL',
-				Settings::FROM_NAME            => 'SENDORA_FROM_NAME',
-				Settings::WEBHOOK_SECRET       => 'SENDORA_WEBHOOK_SECRET',
+				Settings::API_KEY              => 'SENDORA_WP_API_KEY',
+				Settings::TRANSACTIONAL_STREAM => 'SENDORA_WP_TRANSACTIONAL_STREAM',
+				Settings::BROADCAST_STREAM     => 'SENDORA_WP_BROADCAST_STREAM',
+				Settings::FROM_EMAIL           => 'SENDORA_WP_FROM_EMAIL',
+				Settings::FROM_NAME            => 'SENDORA_WP_FROM_NAME',
+				Settings::WEBHOOK_SECRET       => 'SENDORA_WP_WEBHOOK_SECRET',
 			),
 			Settings::CONSTANTS
 		);
@@ -52,7 +52,7 @@ final class SettingsTest extends TestCase {
 	}
 
 	public function test_a_key_from_a_constant_configures_the_plugin(): void {
-		$settings = self::with_constants( array( 'SENDORA_API_KEY' => self::LIVE_KEY ) );
+		$settings = self::with_constants( array( 'SENDORA_WP_API_KEY' => self::LIVE_KEY ) );
 
 		$this->assertTrue( $settings->is_configured() );
 		$this->assertFalse( $settings->is_test_mode() );

@@ -48,7 +48,7 @@ final class DeliveryLog {
 	private const STATUS_DONE = 'done';
 
 	/** The table's name without the site's prefix. */
-	private const TABLE = 'sendora_webhook_deliveries';
+	private const TABLE = 'sendora_wp_webhook_deliveries';
 
 	/** How a time is written in the table, always in UTC. */
 	private const DATE_FORMAT = 'Y-m-d H:i:s';

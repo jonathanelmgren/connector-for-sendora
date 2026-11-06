@@ -24,7 +24,7 @@ final class SchemaTest extends TestCase {
 	private const DELIVERIES_TABLE_SUFFIX = 'deliveries';
 
 	/** A table lookup that finds nothing. */
-	private const FIND_NO_TABLE = "SHOW TABLES LIKE 'sendora_missing'";
+	private const FIND_NO_TABLE = "SHOW TABLES LIKE 'sendora_wp_missing'";
 
 	public function test_addresses_alike_past_the_index_prefix_are_kept_apart(): void {
 		$list   = new SuppressionList();

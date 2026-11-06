@@ -1,10 +1,10 @@
-=== Sendora ===
+=== Sendora for WordPress ===
 Contributors: jonathanelmgren
 Tags: email, smtp, wp_mail, transactional email, newsletter
 Requires at least: 6.7
 Tested up to: 7.1
 Requires PHP: 8.2
-Stable tag: 0.2.0
+Stable tag: 0.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ Sends your site's email through Sendora's API instead of PHP mail() or SMTP, and
 
 == Description ==
 
-Sendora's own plugin for WordPress sends every email WordPress sends with `wp_mail()` through [Sendora](https://sendora.se), our email delivery service, instead of PHP's `mail()` or an SMTP server. Password resets, order confirmations, form notifications and newsletters all go out through Sendora once an API key is set. Without a key, WordPress sends email as it would without the plugin.
+Sendora for WordPress is Sendora's own plugin. It sends every email WordPress sends with `wp_mail()` through [Sendora](https://sendora.se), our email delivery service, instead of PHP's `mail()` or an SMTP server. Password resets, order confirmations, form notifications and newsletters all go out through Sendora once an API key is set. Without a key, WordPress sends email as it would without the plugin.
 
 You need a Sendora account and a server key from your Sendora dashboard.
 
@@ -21,7 +21,7 @@ You need a Sendora account and a server key from your Sendora dashboard.
 * **Transactional and broadcast streams.** Every message goes on Sendora's transactional stream unless a filter or a header asks for the broadcast stream. Broadcasts follow Sendora's rules before they are sent: each carries Sendora's unsubscribe link and goes to each recipient alone.
 * **Delivery reports.** A webhook receives Sendora's reports of bounces, spam complaints and unsubscribes, signed with a secret you save on the settings page.
 * **Suppression list.** A hard bounce stops all mail to the address; a complaint or an unsubscribe stops broadcasts only, so a password reset still arrives. **Tools → Sendora suppressions** lists the addresses, finds one, and removes one.
-* **List cleaning.** Import an address verifier's results (Bouncer, ZeroBounce, NeverBounce or any CSV) before your first send, on the Tools screen or with `wp sendora import`, so an old list does not bounce.
+* **List cleaning.** Import an address verifier's results (Bouncer, ZeroBounce, NeverBounce or any CSV) before your first send, on the Tools screen or with `wp sendora-wp import`, so an old list does not bounce.
 * **Test mode.** A test server's key (`sk_test_…`) makes Sendora accept the mail and deliver none of it. The settings page sends a test email.
 * **Settings in wp-config.php.** Every setting can be a constant, which wins over the settings page.
 * **Hooks for other plugins.** Filters choose the stream and rewrite a broadcast; actions fire for every delivery report, so a newsletter plugin can keep its subscribers in step.
@@ -36,7 +36,7 @@ This plugin connects to our API at Sendora ([sendora.se](https://sendora.se)) to
 
 **What is sent, and when.** Each time WordPress sends an email with `wp_mail()` (for instance a password reset, a comment notification, a newsletter, or the test email on the settings page), the plugin sends that message to `https://api.sendora.se`: its recipients (To, Cc and Bcc addresses and names), its sender and Reply-To addresses, its subject, its text and HTML bodies, its other headers, its attachments, and the stream it goes on. The API key is sent with each request to identify your Sendora server. Recipients on the suppression list are left out and not sent.
 
-**What is received.** We send delivery reports (bounces, spam complaints, unsubscribes and other delivery events) to the site's webhook, `/wp-json/sendora/v1/webhook`, once you create a webhook in your Sendora dashboard. A report holds the event's type, the recipient's address, the message's id, the stream's id and the time. The plugin checks each report's signature with your signing secret, and keeps only the address, the reason, the stream and the time on the suppression list.
+**What is received.** We send delivery reports (bounces, spam complaints, unsubscribes and other delivery events) to the site's webhook, `/wp-json/sendora-wp/v1/webhook`, once you create a webhook in your Sendora dashboard. A report holds the event's type, the recipient's address, the message's id, the stream's id and the time. The plugin checks each report's signature with your signing secret, and keeps only the address, the reason, the stream and the time on the suppression list.
 
 The plugin sends no other data, to us or anyone else: no usage statistics and no tracking.
 
@@ -46,7 +46,7 @@ The plugin sends no other data, to us or anyone else: no usage statistics and no
 
 == Installation ==
 
-1. Install and activate the plugin from **Plugins → Add New**, or upload the `sendora` folder to `/wp-content/plugins/`.
+1. Install and activate the plugin from **Plugins → Add New**, or upload the `sendora-for-wp` folder to `/wp-content/plugins/`.
 2. In your Sendora dashboard, create a server key, and verify the domain your site sends from.
 3. Go to **Settings → Sendora**, paste the key, and set the From address and name the site uses when a message names no sender. Save.
 4. Send a test email from the same page.
@@ -55,9 +55,9 @@ The plugin sends no other data, to us or anyone else: no usage statistics and no
 
 Every setting can be set in `wp-config.php` instead, which keeps the key out of the database:
 
-`define( 'SENDORA_API_KEY', 'sk_live_…' );`
+`define( 'SENDORA_WP_API_KEY', 'sk_live_…' );`
 
-The other constants are `SENDORA_TRANSACTIONAL_STREAM`, `SENDORA_BROADCAST_STREAM`, `SENDORA_FROM_EMAIL`, `SENDORA_FROM_NAME` and `SENDORA_WEBHOOK_SECRET`.
+The other constants are `SENDORA_WP_TRANSACTIONAL_STREAM`, `SENDORA_WP_BROADCAST_STREAM`, `SENDORA_WP_FROM_EMAIL`, `SENDORA_WP_FROM_NAME` and `SENDORA_WP_WEBHOOK_SECRET`.
 
 == Frequently Asked Questions ==
 
@@ -71,7 +71,7 @@ Yes. The plugin sends through your Sendora server, with its key. Without a key i
 
 = How do I send a newsletter on the broadcast stream? =
 
-Return `'broadcast'` from the filter `sendora_stream`, which receives the current choice and the `wp_mail()` arguments, or add the header `X-Sendora-Stream: broadcast` to the message. A broadcast must have `{{ unsubscribe_url }}` in its text and HTML parts: Sendora puts each recipient's own unsubscribe link there. One without it is refused, never sent on the transactional stream.
+Return `'broadcast'` from the filter `sendora_wp_stream`, which receives the current choice and the `wp_mail()` arguments, or add the header `X-Sendora-Stream: broadcast` to the message. A broadcast must have `{{ unsubscribe_url }}` in its text and HTML parts: Sendora puts each recipient's own unsubscribe link there. One without it is refused, never sent on the transactional stream.
 
 = Can I use it with The Newsletter Plugin, MailPoet or FluentCRM? =
 
@@ -79,7 +79,7 @@ The Newsletter Plugin and FluentCRM send through WordPress, so their newsletters
 
 = How do I keep my newsletter's subscribers in step with bounces and unsubscribes? =
 
-The actions `sendora_bounced`, `sendora_complained` and `sendora_unsubscribed` fire with the address, in lower case, and Sendora's report, once the address is on the suppression list. `sendora_event` fires for every verified report. The recipes show how to mark the subscriber in each newsletter plugin.
+The actions `sendora_wp_bounced`, `sendora_wp_complained` and `sendora_wp_unsubscribed` fire with the address, in lower case, and Sendora's report, once the address is on the suppression list. `sendora_wp_event` fires for every verified report. The recipes show how to mark the subscriber in each newsletter plugin.
 
 = Why does the webhook answer 503? =
 
@@ -96,6 +96,9 @@ Yes. Deleting the plugin (not deactivating it) drops its suppression list and we
 
 == Changelog ==
 
+= 0.3.0 =
+* Renamed to Sendora for WordPress, because the wordpress.org slug `sendora` belongs to another plugin: the slug, text domain and folder are `sendora-for-wp`, the main file `sendora-for-wp.php`. Hooks, options, transients and database tables now start with `sendora_wp_`, the wp-config constants with `SENDORA_WP_`, the REST route is `sendora-wp/v1`, the admin pages are `sendora-wp` and `sendora-wp-suppressions`, and the WP-CLI command is `wp sendora-wp`. The PHP namespace stays `SendoraWP`.
+
 = 0.2.0 =
 * Renamed from Connector for Sendora to Sendora: the slug, text domain and folder are `sendora`, the main file `sendora.php`, the PHP namespace `SendoraWP`. Hooks, options and database tables now start with `sendora_`, the wp-config constants with `SENDORA_`, the REST route is `sendora/v1`, and the WP-CLI command is `wp sendora`.
 
@@ -103,6 +106,9 @@ Yes. Deleting the plugin (not deactivating it) drops its suppression list and we
 * First release: sends `wp_mail()` through Sendora's API on a transactional or a broadcast stream, receives delivery reports on a signed webhook, keeps a suppression list, and imports an address verifier's results.
 
 == Upgrade Notice ==
+
+= 0.3.0 =
+The plugin is now called Sendora for WordPress, in the folder `sendora-for-wp`. Hooks, options, constants, tables, the webhook address and the WP-CLI command are renamed; settings saved under the old names are not carried over.
 
 = 0.2.0 =
 The plugin is now called Sendora. Hooks, options, constants, tables, the webhook address and the WP-CLI command are renamed; settings saved under the old names are not carried over.

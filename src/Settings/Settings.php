@@ -13,13 +13,13 @@ use SendoraWP\Vendor\Sendora\Keys;
 
 /**
  * Reads each setting from its constant when one is defined, and from the
- * `sendora_settings` option otherwise. A constant always wins,
+ * `sendora_wp_settings` option otherwise. A constant always wins,
  * so a value kept out of the database stays there.
  */
 final class Settings {
 
 	/** The option that holds every setting saved on the settings page. */
-	public const OPTION = 'sendora_settings';
+	public const OPTION = 'sendora_wp_settings';
 
 	public const API_KEY              = 'api_key';
 	public const TRANSACTIONAL_STREAM = 'transactional_stream';
@@ -30,12 +30,12 @@ final class Settings {
 
 	/** Each setting and the wp-config.php constant that can set it instead. */
 	public const CONSTANTS = array(
-		self::API_KEY              => 'SENDORA_API_KEY',
-		self::TRANSACTIONAL_STREAM => 'SENDORA_TRANSACTIONAL_STREAM',
-		self::BROADCAST_STREAM     => 'SENDORA_BROADCAST_STREAM',
-		self::FROM_EMAIL           => 'SENDORA_FROM_EMAIL',
-		self::FROM_NAME            => 'SENDORA_FROM_NAME',
-		self::WEBHOOK_SECRET       => 'SENDORA_WEBHOOK_SECRET',
+		self::API_KEY              => 'SENDORA_WP_API_KEY',
+		self::TRANSACTIONAL_STREAM => 'SENDORA_WP_TRANSACTIONAL_STREAM',
+		self::BROADCAST_STREAM     => 'SENDORA_WP_BROADCAST_STREAM',
+		self::FROM_EMAIL           => 'SENDORA_WP_FROM_EMAIL',
+		self::FROM_NAME            => 'SENDORA_WP_FROM_NAME',
+		self::WEBHOOK_SECRET       => 'SENDORA_WP_WEBHOOK_SECRET',
 	);
 
 	/**

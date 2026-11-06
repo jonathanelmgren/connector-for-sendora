@@ -12,7 +12,7 @@ namespace SendoraWP\Mail;
 /**
  * Sends one message. The plugin's own implementation talks to Sendora's
  * API; tests and local sites use an in-memory one, set with the
- * `sendora_transport` filter.
+ * `sendora_wp_transport` filter.
  */
 interface Transport {
 

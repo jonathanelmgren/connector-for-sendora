@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<ruleset name="Sendora">
+<ruleset name="Sendora for WordPress">
 	<description>WordPress Coding Standards for the plugin.</description>
 
 	<file>.</file>
@@ -26,7 +26,7 @@
 	<rule ref="WordPress.WP.I18n">
 		<properties>
 			<property name="text_domain" type="array">
-				<element value="sendora"/>
+				<element value="sendora-for-wp"/>
 			</property>
 		</properties>
 	</rule>
@@ -34,7 +34,7 @@
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
 			<property name="prefixes" type="array">
-				<element value="sendora"/>
+				<element value="sendora_wp"/>
 				<element value="SendoraWP"/>
 			</property>
 		</properties>

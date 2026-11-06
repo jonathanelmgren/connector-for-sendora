@@ -72,27 +72,27 @@ final class ImportPlan {
 	public function summary( ?array $applied = null ): array {
 		$lines = array(
 			/* translators: %d: how many rows. */
-			sprintf( _n( '%d row read.', '%d rows read.', $this->rows_read, 'sendora' ), $this->rows_read ),
+			sprintf( _n( '%d row read.', '%d rows read.', $this->rows_read, 'sendora-for-wp' ), $this->rows_read ),
 		);
 		if ( null === $applied ) {
 			$suppress = count( $this->suppress );
 			$already  = count( $this->already );
 			/* translators: %d: how many addresses. */
-			$lines[] = sprintf( _n( '%d address would be suppressed.', '%d addresses would be suppressed.', $suppress, 'sendora' ), $suppress );
+			$lines[] = sprintf( _n( '%d address would be suppressed.', '%d addresses would be suppressed.', $suppress, 'sendora-for-wp' ), $suppress );
 		} else {
 			$suppress = count( $applied['suppressed'] );
 			$already  = count( $this->already ) + count( $applied['already'] );
 			/* translators: %d: how many addresses. */
-			$lines[] = sprintf( _n( '%d address suppressed.', '%d addresses suppressed.', $suppress, 'sendora' ), $suppress );
+			$lines[] = sprintf( _n( '%d address suppressed.', '%d addresses suppressed.', $suppress, 'sendora-for-wp' ), $suppress );
 		}
 		/* translators: %d: how many addresses. */
-		$lines[] = sprintf( _n( '%d address already on the list.', '%d addresses already on the list.', $already, 'sendora' ), $already );
+		$lines[] = sprintf( _n( '%d address already on the list.', '%d addresses already on the list.', $already, 'sendora-for-wp' ), $already );
 		foreach ( $this->skipped_counts() as $reason => $count ) {
 			if ( 0 === $count ) {
 				continue;
 			}
 			/* translators: 1: how many rows, 2: why they were skipped. */
-			$lines[] = sprintf( _n( '%1$d row skipped: %2$s.', '%1$d rows skipped: %2$s.', $count, 'sendora' ), $count, self::skip_label( $reason ) );
+			$lines[] = sprintf( _n( '%1$d row skipped: %2$s.', '%1$d rows skipped: %2$s.', $count, 'sendora-for-wp' ), $count, self::skip_label( $reason ) );
 		}
 		return $lines;
 	}
@@ -104,10 +104,10 @@ final class ImportPlan {
 	 */
 	public static function skip_label( string $reason ): string {
 		return match ( $reason ) {
-			self::SKIP_STATUS          => __( 'status does not suppress', 'sendora' ),
-			self::SKIP_NO_ADDRESS      => __( 'no address', 'sendora' ),
-			self::SKIP_INVALID_ADDRESS => __( 'not a valid address', 'sendora' ),
-			self::SKIP_REPEATED        => __( 'address repeated in the file', 'sendora' ),
+			self::SKIP_STATUS          => __( 'status does not suppress', 'sendora-for-wp' ),
+			self::SKIP_NO_ADDRESS      => __( 'no address', 'sendora-for-wp' ),
+			self::SKIP_INVALID_ADDRESS => __( 'not a valid address', 'sendora-for-wp' ),
+			self::SKIP_REPEATED        => __( 'address repeated in the file', 'sendora-for-wp' ),
 			default                    => $reason,
 		};
 	}

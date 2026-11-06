@@ -28,7 +28,7 @@ use WP_Error;
  * transactional stream instead.
  *
  * A recipient on the suppression list for the message's stream is left
- * out, and named with its reason in the data's `sendora_suppressed`. A
+ * out, and named with its reason in the data's `sendora_wp_suppressed`. A
  * message with every recipient left out fails.
  */
 final class Mailer {
@@ -90,20 +90,20 @@ final class Mailer {
 				$sent_to = array_merge( $sent_to, array_map( static fn ( Address $a ): string => $a->email, array_merge( $delivery->to, $delivery->cc, $delivery->bcc ) ) );
 			}
 		} catch ( SendFailed $failure ) {
-			$mail_data['sendora_error_code'] = $failure->error_code;
-			$mail_data['sendora_status']     = $failure->status;
+			$mail_data['sendora_wp_error_code'] = $failure->error_code;
+			$mail_data['sendora_wp_status']     = $failure->status;
 			// A message sent as several can fail part way: say who has it already, so a retry can leave them out.
-			$mail_data['sendora_message_ids'] = $ids;
-			$mail_data['sendora_sent_to']     = $sent_to;
-			$mail_data['sendora_suppressed']  = $suppressed;
+			$mail_data['sendora_wp_message_ids'] = $ids;
+			$mail_data['sendora_wp_sent_to']     = $sent_to;
+			$mail_data['sendora_wp_suppressed']  = $suppressed;
 			/** This action is documented in wp-includes/pluggable.php. */
 			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress's own hook, as wp_mail() uses it.
 			do_action( 'wp_mail_failed', new WP_Error( self::ERROR_CODE, $failure->getMessage(), $mail_data ) );
 			return false;
 		}
 
-		$mail_data['sendora_message_ids'] = $ids;
-		$mail_data['sendora_suppressed']  = $suppressed;
+		$mail_data['sendora_wp_message_ids'] = $ids;
+		$mail_data['sendora_wp_suppressed']  = $suppressed;
 		/** This action is documented in wp-includes/pluggable.php. */
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress's own hook, as wp_mail() uses it.
 		do_action( 'wp_mail_succeeded', $mail_data );
@@ -146,7 +146,7 @@ final class Mailer {
 			}
 			$failure = sprintf(
 				/* translators: %s: the recipients and why each is suppressed, such as "anna@example.com (hard bounce)". */
-				__( 'Not sent: every recipient is on the suppression list: %s.', 'sendora' ),
+				__( 'Not sent: every recipient is on the suppression list: %s.', 'sendora-for-wp' ),
 				implode( ', ', $reasons )
 			);
 			throw new SendFailed( $failure, self::ERROR_ALL_SUPPRESSED ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.

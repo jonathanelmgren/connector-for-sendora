@@ -14,7 +14,7 @@ namespace SendoraWP\Mail;
  * recipient's own unsubscribe link where `{{ unsubscribe_url }}` stands,
  * and sets the `List-Unsubscribe` headers itself. So a broadcast:
  *
- * - is first passed through the `sendora_broadcast_message`
+ * - is first passed through the `sendora_wp_broadcast_message`
  *   filter, which can rewrite it, for instance to put the placeholder in
  *   place of an unsubscribe link of its own;
  * - gets a text part written from its HTML when it has HTML only;
@@ -26,7 +26,7 @@ namespace SendoraWP\Mail;
 final class Broadcast {
 
 	/** The filter that can rewrite a broadcast before its checks. */
-	public const MESSAGE_FILTER = 'sendora_broadcast_message';
+	public const MESSAGE_FILTER = 'sendora_wp_broadcast_message';
 
 	/** Where Sendora puts a recipient's unsubscribe link. */
 	public const UNSUBSCRIBE_PLACEHOLDER = '{{ unsubscribe_url }}';
@@ -38,7 +38,7 @@ final class Broadcast {
 	private const UNSUBSCRIBE_PATTERN = '/\{\{\s*unsubscribe_url\s*\}\}/';
 
 	/** Headers Sendora sets on a broadcast itself, in lower case. */
-	private const SENDORA_HEADERS = array( 'list-unsubscribe', 'list-unsubscribe-post' );
+	private const SENDORA_WP_HEADERS = array( 'list-unsubscribe', 'list-unsubscribe-post' );
 
 	/**
 	 * The messages to send: one per recipient, each fit for the broadcast
@@ -66,7 +66,7 @@ final class Broadcast {
 		 *
 		 * @var mixed $filtered
 		 */
-		$filtered = apply_filters( self::MESSAGE_FILTER, $message, $atts ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- the constant is sendora_broadcast_message.
+		$filtered = apply_filters( self::MESSAGE_FILTER, $message, $atts ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- the constant is sendora_wp_broadcast_message.
 		if ( $filtered instanceof Message ) {
 			// The filter rewrites the content; the stream stays the one chosen, so a broadcast never leaves as transactional mail.
 			$message = $filtered->on_stream_of( $message );
@@ -77,16 +77,16 @@ final class Broadcast {
 		}
 
 		if ( null !== $message->text && ! self::has_placeholder( $message->text ) ) {
-			throw self::missing_placeholder( __( 'text', 'sendora' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
+			throw self::missing_placeholder( __( 'text', 'sendora-for-wp' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
 		}
 		if ( null !== $message->html && ! self::has_placeholder( $message->html ) ) {
-			throw self::missing_placeholder( __( 'HTML', 'sendora' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
+			throw self::missing_placeholder( __( 'HTML', 'sendora-for-wp' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
 		}
 
 		$message = $message->with_headers(
 			array_filter(
 				$message->headers,
-				static fn ( string $name ): bool => ! in_array( strtolower( $name ), self::SENDORA_HEADERS, true ),
+				static fn ( string $name ): bool => ! in_array( strtolower( $name ), self::SENDORA_WP_HEADERS, true ),
 				ARRAY_FILTER_USE_KEY
 			)
 		);
@@ -111,7 +111,7 @@ final class Broadcast {
 	private static function missing_placeholder( string $part ): SendFailed {
 		$failure = sprintf(
 			/* translators: 1: a part of the message, "text" or "HTML"; 2: the placeholder, {{ unsubscribe_url }}. */
-			__( 'The message is a broadcast, and its %1$s part does not contain %2$s, which Sendora needs on every broadcast for the recipient\'s unsubscribe link.', 'sendora' ),
+			__( 'The message is a broadcast, and its %1$s part does not contain %2$s, which Sendora needs on every broadcast for the recipient\'s unsubscribe link.', 'sendora-for-wp' ),
 			$part,
 			self::UNSUBSCRIBE_PLACEHOLDER
 		);

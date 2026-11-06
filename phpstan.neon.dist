@@ -2,7 +2,7 @@ parameters:
 	level: 8
 	phpVersion: 80200
 	paths:
-		- sendora.php
+		- sendora-for-wp.php
 		- requirements.php
 		- uninstall.php
 		- src
