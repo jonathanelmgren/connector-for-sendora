@@ -122,6 +122,7 @@ final class SuppressionList {
 	 * @param list<string> $emails The addresses, normalised.
 	 * @param string       $reason One of {@see self::REASONS}.
 	 * @return list<string>
+	 * @throws QueryFailed The database refused the lookup.
 	 */
 	public function listed( array $emails, string $reason ): array {
 		global $wpdb;
@@ -139,6 +140,9 @@ final class SuppressionList {
 					...$hashes
 				)
 			);
+			if ( '' !== $wpdb->last_error ) {
+				throw QueryFailed::last( 'Looking up the suppression list' );
+			}
 			array_push( $listed, ...array_map( 'strval', $found ) );
 		}
 		return array_values( array_intersect( $emails, $listed ) );

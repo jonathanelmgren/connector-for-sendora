@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace ConnectorForSendora\Cli;
 
+use ConnectorForSendora\Database\QueryFailed;
 use ConnectorForSendora\Import\ImportFailed;
 use ConnectorForSendora\Import\Importer;
 use ConnectorForSendora\Import\ImportOptions;
@@ -91,13 +92,16 @@ final class ImportCommand {
 		$verbose = (bool) WP_CLI\Utils\get_flag_value( $assoc_args, 'verbose', false );
 
 		try {
-			$plan = $this->importer->plan( $args[0], $options, $verbose );
+			$plan    = $this->importer->plan( $args[0], $options, $verbose );
+			$applied = $apply ? $this->importer->apply( $plan->suppress ) : null;
 		} catch ( ImportFailed $e ) {
 			WP_CLI::error( $e->getMessage() );
 			return;
+		} catch ( QueryFailed $e ) {
+			WP_CLI::error( ImportFailed::database( $e )->getMessage() );
+			return;
 		}
 
-		$applied = $apply ? $this->importer->apply( $plan->suppress ) : null;
 		foreach ( $plan->summary( $applied ) as $line ) {
 			WP_CLI::log( $line );
 		}

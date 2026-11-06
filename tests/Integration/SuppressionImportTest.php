@@ -139,6 +139,36 @@ final class SuppressionImportTest extends TestCase {
 		$this->assertStringNotContainsString( 'Dry run: nothing has been written yet.', $page );
 	}
 
+	public function test_a_lookup_the_database_refuses_shows_an_error_and_no_dry_run(): void {
+		$path = $this->upload( "email,status\nanna@example.com,undeliverable\n" );
+		$this->queries->refuse( BrokenQueries::reads_of( SuppressionList::table() ) );
+
+		$this->post( SuppressionImport::PREVIEW_ACTION, 'handle_preview' );
+		$this->queries->restore();
+
+		$this->assertFileDoesNotExist( $path );
+		$page = $this->render();
+		$this->assertStringContainsString( 'The database refused the import.', $page );
+		$this->assertStringNotContainsString( 'Dry run: nothing has been written yet.', $page );
+		$this->assertStringNotContainsString( 'SELECT', $page );
+	}
+
+	public function test_a_write_the_database_refuses_shows_an_error(): void {
+		$this->upload( "email,status\nanna@example.com,undeliverable\n" );
+		$this->post( SuppressionImport::PREVIEW_ACTION, 'handle_preview' );
+		$token = $this->token();
+		$this->queries->refuse( BrokenQueries::writes_to( SuppressionList::table() ) );
+
+		$this->assertSame( SuppressionPage::url(), $this->post( SuppressionImport::CONFIRM_ACTION, 'handle_confirm', array( SuppressionImport::TOKEN_FIELD => $token ) ) );
+		$this->queries->restore();
+
+		$this->assertSame( 0, $this->list->count( '' ) );
+		$page = $this->render();
+		$this->assertStringContainsString( 'The database refused the import.', $page );
+		$this->assertStringNotContainsString( 'The import is done.', $page );
+		$this->assertStringNotContainsString( 'INSERT', $page );
+	}
+
 	public function test_a_file_that_is_not_csv_is_refused_and_deleted(): void {
 		$path = $this->upload( self::PNG_SIGNATURE . str_repeat( "\0", 64 ) );
 

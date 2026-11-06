@@ -9,11 +9,13 @@ declare(strict_types=1);
 
 namespace ConnectorForSendora\Tests\Integration;
 
+use ConnectorForSendora\Database\QueryFailed;
 use ConnectorForSendora\Import\ImportFailed;
 use ConnectorForSendora\Import\Importer;
 use ConnectorForSendora\Import\ImportOptions;
 use ConnectorForSendora\Import\ImportPlan;
 use ConnectorForSendora\Suppression\SuppressionList;
+use ConnectorForSendora\Tests\Support\BrokenQueries;
 use ConnectorForSendora\Tests\Support\CsvFiles;
 use DateTimeImmutable;
 
@@ -272,6 +274,22 @@ final class ImporterTest extends TestCase {
 		$this->expectExceptionMessage( 'header row' );
 
 		$this->importer->plan( $this->files->write( CsvFiles::BOM ), new ImportOptions() );
+	}
+
+	public function test_a_lookup_the_database_refuses_is_not_taken_for_an_empty_list(): void {
+		$this->list->add( 'anna@example.com', SuppressionList::BOUNCED, SuppressionList::SOURCE_WEBHOOK );
+		$path    = $this->files->lines( array( 'email,status', 'anna@example.com,undeliverable' ) );
+		$queries = new BrokenQueries();
+		$queries->refuse( BrokenQueries::reads_of( SuppressionList::table() ) );
+
+		try {
+			$this->importer->plan( $path, new ImportOptions() );
+			$this->fail( 'The plan did not report the refused lookup.' );
+		} catch ( QueryFailed $e ) {
+			$this->assertStringStartsWith( 'Looking up the suppression list', $e->getMessage() );
+		} finally {
+			$queries->restore();
+		}
 	}
 
 	public function test_a_missing_file_is_refused(): void {

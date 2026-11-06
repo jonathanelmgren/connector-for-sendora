@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace ConnectorForSendora\Admin;
 
+use ConnectorForSendora\Database\QueryFailed;
 use ConnectorForSendora\Import\ImportFailed;
 use ConnectorForSendora\Import\Importer;
 use ConnectorForSendora\Import\ImportOptions;
@@ -131,6 +132,8 @@ final class SuppressionImport {
 			}
 		} catch ( ImportFailed $e ) {
 			$this->save_error( $e->getMessage() );
+		} catch ( QueryFailed $e ) {
+			$this->save_error( ImportFailed::database( $e )->getMessage() );
 		} finally {
 			if ( null !== $path && ( $this->is_upload )( $path ) ) {
 				wp_delete_file( $path );
@@ -152,10 +155,16 @@ final class SuppressionImport {
 		}
 
 		$plan = self::plan( $saved['plan'] );
+		try {
+			$applied = $this->importer->apply( $plan->suppress );
+		} catch ( QueryFailed $e ) {
+			$this->save_error( ImportFailed::database( $e )->getMessage() );
+			$this->back();
+		}
 		$this->save(
 			array(
 				'state'   => self::STATE_DONE,
-				'summary' => $plan->summary( $this->importer->apply( $plan->suppress ) ),
+				'summary' => $plan->summary( $applied ),
 			)
 		);
 		$this->back();

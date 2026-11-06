@@ -13,8 +13,8 @@ namespace ConnectorForSendora\Import;
 
 /**
  * The file cannot be read, has no header row, lacks a column the import
- * needs, is not an upload the screen takes, or gives a dry run too large to
- * keep. Its message is a translated sentence for the person importing.
+ * needs, is not an upload the screen takes, gives a dry run too large to
+ * keep, or meets a database that refuses the import. Its message is a translated sentence for the person importing.
  */
 final class ImportFailed extends \RuntimeException {
 
@@ -72,6 +72,15 @@ final class ImportFailed extends \RuntimeException {
 	/** The dry run is too large for the site to keep until it is confirmed. */
 	public static function not_kept(): self {
 		return new self( __( 'The dry run could not be kept for you to confirm: the file is too large for this site\'s storage. Import it with WP-CLI.', 'connector-for-sendora' ) );
+	}
+
+	/**
+	 * The database refused a lookup or a write. The message names no query.
+	 *
+	 * @param \Throwable|null $previous What caused it.
+	 */
+	public static function database( ?\Throwable $previous = null ): self {
+		return new self( __( 'The database refused the import. Some addresses may be on the list already; importing the file again is safe, as it leaves those as they are.', 'connector-for-sendora' ), 0, $previous );
 	}
 
 	/** The upload is not a CSV file. */
