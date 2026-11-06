@@ -41,7 +41,7 @@ final class SuppressionSendingTest extends TestCase {
 		$this->assertTrue( wp_mail( 'anna@example.com, Bounced@Example.com', 'Hello', 'Body' ) );
 
 		$this->assertSame( array( 'anna@example.com' ), self::emails( $this->transport->sent[0]->to ) );
-		$this->assertSame( array( 'bounced@example.com' => SuppressionList::BOUNCED ), $data->value['sendora_suppressed'] );
+		$this->assertSame( array( 'bounced@example.com' => SuppressionList::BOUNCED ), $data->value['sendora_wp_suppressed'] );
 	}
 
 	public function test_a_complaint_or_an_unsubscribe_still_gets_transactional_mail(): void {
@@ -85,8 +85,8 @@ final class SuppressionSendingTest extends TestCase {
 		$this->assertStringContainsString( 'bounced@example.com (hard bounce)', $error->value->get_error_message() );
 		$data = $error->value->get_error_data();
 		$this->assertIsArray( $data );
-		$this->assertSame( Mailer::ERROR_ALL_SUPPRESSED, $data['sendora_error_code'] );
-		$this->assertSame( array( 'bounced@example.com' => SuppressionList::BOUNCED ), $data['sendora_suppressed'] );
+		$this->assertSame( Mailer::ERROR_ALL_SUPPRESSED, $data['sendora_wp_error_code'] );
+		$this->assertSame( array( 'bounced@example.com' => SuppressionList::BOUNCED ), $data['sendora_wp_suppressed'] );
 	}
 
 	public function test_a_broadcast_to_unsubscribed_recipients_only_fails(): void {

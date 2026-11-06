@@ -246,7 +246,7 @@ final class BroadcastTest extends TestCase {
 			$this->assertSame( array(), $message->bcc );
 			$this->assertSame( self::BROADCAST_STREAM, $message->stream_id );
 		}
-		$this->assertSame( array( 'msg_fake_1', 'msg_fake_2', 'msg_fake_3', 'msg_fake_4' ), $succeeded[0]['sendora_message_ids'] );
+		$this->assertSame( array( 'msg_fake_1', 'msg_fake_2', 'msg_fake_3', 'msg_fake_4' ), $succeeded[0]['sendora_wp_message_ids'] );
 	}
 
 	public function test_the_broadcast_filter_can_put_the_placeholder_in_place_of_its_own_link(): void {
@@ -304,8 +304,8 @@ final class BroadcastTest extends TestCase {
 		$this->assertSame( 2, $this->transport->attempts );
 		$this->assertCount( 1, $this->errors );
 		$data = $this->errors[0]->get_error_data();
-		$this->assertSame( array( 'msg_fake_1' ), $data['sendora_message_ids'] );
-		$this->assertSame( array( 'anna@example.com' ), $data['sendora_sent_to'] );
+		$this->assertSame( array( 'msg_fake_1' ), $data['sendora_wp_message_ids'] );
+		$this->assertSame( array( 'anna@example.com' ), $data['sendora_wp_sent_to'] );
 	}
 
 	public function test_a_broadcast_filter_that_returns_no_message_keeps_the_message(): void {
@@ -342,7 +342,7 @@ final class BroadcastTest extends TestCase {
 		$this->assertSame( array(), $this->transport->sent );
 		$this->assertSame( 0, $this->transport->attempts );
 		$this->assertCount( 1, $this->errors );
-		$this->assertSame( $code, $this->errors[0]->get_error_data()['sendora_error_code'] );
+		$this->assertSame( $code, $this->errors[0]->get_error_data()['sendora_wp_error_code'] );
 		$this->assertStringContainsString( $rule, $this->errors[0]->get_error_message() );
 	}
 }

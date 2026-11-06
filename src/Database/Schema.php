@@ -21,7 +21,7 @@ use SendoraWP\Webhook\DeliveryLog;
 final class Schema {
 
 	/** The option that holds the version of the schema the tables have. */
-	public const VERSION_OPTION = 'sendora_db_version';
+	public const VERSION_OPTION = 'sendora_wp_db_version';
 
 	/** The schema's version; raise it with every change to a table below. */
 	public const VERSION = '1';

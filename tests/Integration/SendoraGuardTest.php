@@ -42,7 +42,7 @@ final class SendoraGuardTest extends TestCase {
 			static fn ( string $name ): bool => SendoraGuard::KEY_CONSTANT === $name
 		);
 
-		$this->assertSame( array( 'The constant SENDORA_API_KEY is defined.' ), $violations );
+		$this->assertSame( array( 'The constant SENDORA_WP_API_KEY is defined.' ), $violations );
 	}
 
 	public function test_a_request_to_sendora_is_refused(): void {

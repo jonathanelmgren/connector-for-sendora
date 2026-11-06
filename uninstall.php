@@ -19,7 +19,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 require_once __DIR__ . '/requirements.php';
 
-if ( version_compare( PHP_VERSION, SENDORA_MIN_PHP, '<' ) ) {
+if ( version_compare( PHP_VERSION, SENDORA_WP_MIN_PHP, '<' ) ) {
 	return;
 }
 

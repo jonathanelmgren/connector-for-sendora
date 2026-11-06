@@ -217,7 +217,7 @@ final class MailerTest extends TestCase {
 
 		$this->assertSame( array(), $this->transport->sent );
 		$this->assertCount( 1, $errors );
-		$this->assertSame( MessageBuilder::ERROR_UNSUPPORTED_CHARSET, $errors[0]->get_error_data()['sendora_error_code'] );
+		$this->assertSame( MessageBuilder::ERROR_UNSUPPORTED_CHARSET, $errors[0]->get_error_data()['sendora_wp_error_code'] );
 	}
 
 	public function test_an_attachment_path_with_a_scheme_is_skipped_without_being_looked_at(): void {
@@ -251,8 +251,8 @@ final class MailerTest extends TestCase {
 		$this->assertSame( Mailer::ERROR_CODE, $errors[0]->get_error_code() );
 		$this->assertSame( 'The domain example.com is not verified.', $errors[0]->get_error_message() );
 		$data = $errors[0]->get_error_data();
-		$this->assertSame( 'domain_not_verified', $data['sendora_error_code'] );
-		$this->assertSame( self::STATUS_UNPROCESSABLE, $data['sendora_status'] );
+		$this->assertSame( 'domain_not_verified', $data['sendora_wp_error_code'] );
+		$this->assertSame( self::STATUS_UNPROCESSABLE, $data['sendora_wp_status'] );
 		$this->assertSame( 'anna@example.com', $data['to'] );
 	}
 
@@ -330,7 +330,7 @@ final class MailerTest extends TestCase {
 
 		$this->assertCount( 1, $succeeded );
 		$this->assertSame( 'Hi', $succeeded[0]['subject'] );
-		$this->assertSame( array( 'msg_fake_1' ), $succeeded[0]['sendora_message_ids'] );
+		$this->assertSame( array( 'msg_fake_1' ), $succeeded[0]['sendora_wp_message_ids'] );
 	}
 
 	public function test_an_earlier_pre_wp_mail_answer_is_kept(): void {

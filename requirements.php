@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /** The PHP version the plugin and Sendora's SDK need. */
-define( 'SENDORA_MIN_PHP', '8.2' );
+define( 'SENDORA_WP_MIN_PHP', '8.2' );
 
 /** The oldest WordPress the plugin supports. */
-define( 'SENDORA_MIN_WP', '6.7' );
+define( 'SENDORA_WP_MIN_WP', '6.7' );

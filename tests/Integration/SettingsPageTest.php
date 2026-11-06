@@ -34,18 +34,18 @@ final class SettingsPageTest extends TestCase {
 	}
 
 	public function test_a_key_from_a_constant_is_never_written_into_the_page(): void {
-		$page = $this->render( self::with_constants( array( 'SENDORA_API_KEY' => self::LIVE_KEY ) ) );
+		$page = $this->render( self::with_constants( array( 'SENDORA_WP_API_KEY' => self::LIVE_KEY ) ) );
 
 		$this->assertStringNotContainsString( self::LIVE_KEY, $page );
-		$this->assertStringContainsString( 'Set by SENDORA_API_KEY in wp-config.php.', $page );
+		$this->assertStringContainsString( 'Set by SENDORA_WP_API_KEY in wp-config.php.', $page );
 	}
 
 	public function test_a_field_set_by_a_constant_is_read_only_and_not_submitted(): void {
-		$page = $this->render( self::with_constants( array( 'SENDORA_FROM_NAME' => 'From Config' ) ) );
+		$page = $this->render( self::with_constants( array( 'SENDORA_WP_FROM_NAME' => 'From Config' ) ) );
 
-		$this->assertMatchesRegularExpression( '/<input type="text" id="sendora-from_name"\s+class="regular-text" value="From Config" readonly disabled \/>/', $page );
-		$this->assertStringNotContainsString( 'name="sendora_settings[from_name]"', $page );
-		$this->assertStringContainsString( 'name="sendora_settings[from_email]"', $page );
+		$this->assertMatchesRegularExpression( '/<input type="text" id="sendora-wp-from_name"\s+class="regular-text" value="From Config" readonly disabled \/>/', $page );
+		$this->assertStringNotContainsString( 'name="sendora_wp_settings[from_name]"', $page );
+		$this->assertStringContainsString( 'name="sendora_wp_settings[from_email]"', $page );
 	}
 
 	public function test_a_test_key_is_labelled_test_mode(): void {
@@ -114,7 +114,7 @@ final class SettingsPageTest extends TestCase {
 
 	public function test_a_field_set_by_a_constant_keeps_its_saved_value(): void {
 		$this->configure( array( Settings::FROM_NAME => 'Saved' ) );
-		$page = new SettingsPage( self::with_constants( array( 'SENDORA_FROM_NAME' => 'Constant' ) ) );
+		$page = new SettingsPage( self::with_constants( array( 'SENDORA_WP_FROM_NAME' => 'Constant' ) ) );
 
 		$saved = $page->sanitize( array( Settings::FROM_NAME => 'Posted' ) );
 
@@ -137,7 +137,7 @@ final class SettingsPageTest extends TestCase {
 	public function test_the_page_shows_the_webhook_address_and_its_events(): void {
 		$page = $this->render( new Settings() );
 
-		$this->assertStringContainsString( esc_attr( rest_url( 'sendora/v1/webhook' ) ), $page );
+		$this->assertStringContainsString( esc_attr( rest_url( 'sendora-wp/v1/webhook' ) ), $page );
 		$this->assertStringContainsString( '<code>bounced</code>, <code>spam_complaint</code>, <code>unsubscribed</code>', $page );
 	}
 

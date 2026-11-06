@@ -22,7 +22,7 @@ use DateTimeZone;
  *
  * A hard bounce stops all mail to the address. A complaint or an
  * unsubscribe stops broadcasts only, so a password reset still arrives.
- * The filter `sendora_is_suppressed` has the last word.
+ * The filter `sendora_wp_is_suppressed` has the last word.
  */
 final class SuppressionList {
 
@@ -51,10 +51,10 @@ final class SuppressionList {
 	public const SOURCES = array( self::SOURCE_WEBHOOK, self::SOURCE_IMPORT, self::SOURCE_MANUAL );
 
 	/** The filter that can override whether a recipient is skipped. */
-	public const FILTER = 'sendora_is_suppressed';
+	public const FILTER = 'sendora_wp_is_suppressed';
 
 	/** The table's name without the site's prefix. */
-	private const TABLE = 'sendora_suppressions';
+	private const TABLE = 'sendora_wp_suppressions';
 
 	/** How many addresses one query looks up or adds. */
 	private const CHUNK = 500;
@@ -271,7 +271,7 @@ final class SuppressionList {
 		 * @param string      $stream     `'transactional'` or `'broadcast'`.
 		 * @param string|null $reason     `'bounced'`, `'complained'` or `'unsubscribed'` when the list skips it; null otherwise.
 		 */
-		$suppressed = apply_filters( self::FILTER, null !== $reason, $email, $stream, $reason ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- the constant is sendora_is_suppressed.
+		$suppressed = apply_filters( self::FILTER, null !== $reason, $email, $stream, $reason ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- the constant is sendora_wp_is_suppressed.
 
 		if ( true !== $suppressed ) {
 			return null;
@@ -333,9 +333,9 @@ final class SuppressionList {
 	 */
 	public static function reason_label( string $reason ): string {
 		return match ( $reason ) {
-			self::BOUNCED      => __( 'hard bounce', 'sendora' ),
-			self::COMPLAINED   => __( 'spam complaint', 'sendora' ),
-			self::UNSUBSCRIBED => __( 'unsubscribed', 'sendora' ),
+			self::BOUNCED      => __( 'hard bounce', 'sendora-for-wp' ),
+			self::COMPLAINED   => __( 'spam complaint', 'sendora-for-wp' ),
+			self::UNSUBSCRIBED => __( 'unsubscribed', 'sendora-for-wp' ),
 			default            => $reason,
 		};
 	}

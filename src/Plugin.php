@@ -29,7 +29,7 @@ use SendoraWP\Webhook\Webhook;
 final class Plugin {
 
 	/** The filter that can replace the transport, for tests and local sites. */
-	public const TRANSPORT_FILTER = 'sendora_transport';
+	public const TRANSPORT_FILTER = 'sendora_wp_transport';
 
 	/** Hooks everything in. */
 	public static function boot(): void {
@@ -53,7 +53,7 @@ final class Plugin {
 
 	/**
 	 * The transport for a send: Sendora's API with the configured key,
-	 * unless the `sendora_transport` filter gives another.
+	 * unless the `sendora_wp_transport` filter gives another.
 	 *
 	 * @param Settings $settings The settings, for the key.
 	 */
@@ -67,7 +67,7 @@ final class Plugin {
 		 * @param Transport|null $transport Null, for Sendora's API.
 		 * @param Settings       $settings  The plugin's settings.
 		 */
-		$transport = apply_filters( self::TRANSPORT_FILTER, null, $settings ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- the constant is sendora_transport.
+		$transport = apply_filters( self::TRANSPORT_FILTER, null, $settings ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- the constant is sendora_wp_transport.
 		return $transport instanceof Transport ? $transport : new SendoraTransport( $settings->get( Settings::API_KEY ) );
 	}
 }

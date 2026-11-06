@@ -17,12 +17,12 @@ use SendoraWP\Import\ImportPlan;
 use WP_CLI;
 
 /**
- * `wp sendora import <csv>`.
+ * `wp sendora-wp import <csv>`.
  */
 final class ImportCommand {
 
 	/** The command's name under `wp`. */
-	public const NAME = 'sendora import';
+	public const NAME = 'sendora-wp import';
 
 	/**
 	 * A command.
@@ -76,8 +76,8 @@ final class ImportCommand {
 	 *
 	 * ## EXAMPLES
 	 *
-	 *     wp sendora import results.csv
-	 *     wp sendora import results.csv --status-column="ZB Status" --statuses=invalid --apply
+	 *     wp sendora-wp import results.csv
+	 *     wp sendora-wp import results.csv --status-column="ZB Status" --statuses=invalid --apply
 	 *
 	 * @param list<string>          $args       The file.
 	 * @param array<string, string> $assoc_args The options.
@@ -110,9 +110,9 @@ final class ImportCommand {
 		}
 
 		if ( null === $applied ) {
-			WP_CLI::success( __( 'Dry run: nothing was written. Run again with --apply to write.', 'sendora' ) );
+			WP_CLI::success( __( 'Dry run: nothing was written. Run again with --apply to write.', 'sendora-for-wp' ) );
 		} else {
-			WP_CLI::success( __( 'Imported.', 'sendora' ) );
+			WP_CLI::success( __( 'Imported.', 'sendora-for-wp' ) );
 		}
 	}
 
@@ -124,8 +124,8 @@ final class ImportCommand {
 	 */
 	private function list_addresses( ImportPlan $plan, ?array $applied ): void {
 		$groups = array(
-			null === $applied ? __( 'Would suppress:', 'sendora' ) : __( 'Suppressed:', 'sendora' ) => $applied['suppressed'] ?? $plan->suppress,
-			__( 'Already on the list:', 'sendora' ) => array_merge( $plan->already, $applied['already'] ?? array() ),
+			null === $applied ? __( 'Would suppress:', 'sendora-for-wp' ) : __( 'Suppressed:', 'sendora-for-wp' ) => $applied['suppressed'] ?? $plan->suppress,
+			__( 'Already on the list:', 'sendora-for-wp' ) => array_merge( $plan->already, $applied['already'] ?? array() ),
 		);
 		foreach ( $groups as $heading => $emails ) {
 			if ( array() === $emails ) {
@@ -142,10 +142,10 @@ final class ImportCommand {
 				continue;
 			}
 			/* translators: %s: why the rows were skipped. */
-			WP_CLI::log( sprintf( __( 'Skipped, %s:', 'sendora' ), ImportPlan::skip_label( $reason ) ) );
+			WP_CLI::log( sprintf( __( 'Skipped, %s:', 'sendora-for-wp' ), ImportPlan::skip_label( $reason ) ) );
 			foreach ( $rows as $row ) {
 				/* translators: 1: a row number, 2: the row's address, if any. */
-				WP_CLI::log( sprintf( __( '  row %1$d: %2$s', 'sendora' ), $row['row'], $row['email'] ) );
+				WP_CLI::log( sprintf( __( '  row %1$d: %2$s', 'sendora-for-wp' ), $row['row'], $row['email'] ) );
 			}
 		}
 	}

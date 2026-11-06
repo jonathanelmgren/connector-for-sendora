@@ -1,8 +1,8 @@
 # FluentCRM
 
 Written against FluentCRM 3.3. Put the code in a small plugin of your own (for
-instance `wp-content/mu-plugins/sendora-fluentcrm.php`), not in the Sendora
-plugin.
+instance `wp-content/mu-plugins/sendora-fluentcrm.php`), not in Sendora for
+WordPress.
 
 FluentCRM sends every email through `wp_mail()`, one per contact, so
 Sendora sends its campaigns, automations and sequences, and each
@@ -53,7 +53,7 @@ broadcast is sent:
 const MY_SITE_FLUENTCRM_UNSUBSCRIBE_URL = '#https?://[^\s"\'<>]*[?&](?:amp;)?fluentcrm=1[^\s"\'<>]*[?&;]route=unsubscribe[^\s"\'<>]*#';
 
 add_filter(
-	'sendora_broadcast_message',
+	'sendora_wp_broadcast_message',
 	static function ( $message ) {
 		if ( null !== $message->html ) {
 			$message = $message->with_html( preg_replace( MY_SITE_FLUENTCRM_UNSUBSCRIBE_URL, '{{ unsubscribe_url }}', $message->html ) );
@@ -66,7 +66,7 @@ add_filter(
 );
 ```
 
-FluentCRM sends HTML only; the Sendora plugin writes the text part from it,
+FluentCRM sends HTML only; Sendora for WordPress writes the text part from it,
 link included.
 
 ## Keeping contacts in step
@@ -91,9 +91,9 @@ function my_site_fluentcrm_set_status( string $status ): callable {
 	};
 }
 
-add_action( 'sendora_unsubscribed', my_site_fluentcrm_set_status( 'unsubscribed' ) );
-add_action( 'sendora_bounced', my_site_fluentcrm_set_status( 'bounced' ) );
-add_action( 'sendora_complained', my_site_fluentcrm_set_status( 'complained' ) );
+add_action( 'sendora_wp_unsubscribed', my_site_fluentcrm_set_status( 'unsubscribed' ) );
+add_action( 'sendora_wp_bounced', my_site_fluentcrm_set_status( 'bounced' ) );
+add_action( 'sendora_wp_complained', my_site_fluentcrm_set_status( 'complained' ) );
 ```
 
 The address arrives in lower case; FluentCRM looks a contact up by the address
