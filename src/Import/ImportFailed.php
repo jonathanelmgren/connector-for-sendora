@@ -14,7 +14,8 @@ namespace ConnectorForSendora\Import;
 /**
  * The file cannot be read, has no header row, lacks a column the import
  * needs, is not an upload the screen takes, gives a dry run too large to
- * keep, or meets a database that refuses the import. Its message is a translated sentence for the person importing.
+ * keep, or meets a database that refuses the import. Its message is a
+ * translated sentence for the person importing.
  */
 final class ImportFailed extends \RuntimeException {
 
