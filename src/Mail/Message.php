@@ -137,7 +137,7 @@ final class Message {
 	 * @param list<Address> $cc  Copied recipients.
 	 * @param list<Address> $bcc Blind-copied recipients.
 	 */
-	private function with_recipients( array $to, array $cc, array $bcc ): self {
+	public function with_recipients( array $to, array $cc, array $bcc ): self {
 		return $this->copy( to: $to, cc: $cc, bcc: $bcc );
 	}
 

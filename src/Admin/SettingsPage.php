@@ -10,15 +10,17 @@ declare(strict_types=1);
 namespace ConnectorForSendora\Admin;
 
 use ConnectorForSendora\Settings\Settings;
+use ConnectorForSendora\Webhook\Webhook;
 use WP_Error;
 
 /**
- * Settings → Sendora: the API key, the two stream ids and the default
- * sender, each read-only when a wp-config.php constant sets it, and a
- * button that sends a test email.
+ * Settings → Sendora: the API key, the two stream ids, the default
+ * sender and the webhook's signing secret, each read-only when a
+ * wp-config.php constant sets it; the webhook's address and the events to
+ * subscribe it to; and a button that sends a test email.
  *
- * A saved API key is never written back into the page: the field stays
- * empty, and leaving it empty keeps the saved key.
+ * A saved API key or signing secret is never written back into the page:
+ * the field stays empty, and leaving it empty keeps the saved value.
  */
 final class SettingsPage {
 
@@ -39,6 +41,15 @@ final class SettingsPage {
 
 	/** The form field that asks for the saved key to be removed. */
 	public const REMOVE_KEY_FIELD = 'remove_api_key';
+
+	/** The form field that asks for the saved signing secret to be removed. */
+	public const REMOVE_WEBHOOK_SECRET_FIELD = 'remove_webhook_secret';
+
+	/** The fields never written back into the page, and the field that removes each. */
+	private const SECRETS = array(
+		Settings::API_KEY        => self::REMOVE_KEY_FIELD,
+		Settings::WEBHOOK_SECRET => self::REMOVE_WEBHOOK_SECRET_FIELD,
+	);
 
 	/** The query argument the page is shown with after a test email. */
 	private const TEST_RESULT_ARG = 'connector_for_sendora_test';
@@ -101,8 +112,8 @@ final class SettingsPage {
 
 	/**
 	 * The option's new value from the submitted form. A field a constant
-	 * sets keeps its saved value; an empty API key field keeps the saved
-	 * key, unless removing it was asked for.
+	 * sets keeps its saved value; an empty API key or signing secret field
+	 * keeps the saved one, unless removing it was asked for.
 	 *
 	 * @param mixed $input The submitted values.
 	 * @return array<string, string>
@@ -118,9 +129,9 @@ final class SettingsPage {
 
 			if ( $this->settings->is_constant( $field ) ) {
 				$clean[ $field ] = $previous;
-			} elseif ( Settings::API_KEY === $field ) {
+			} elseif ( isset( self::SECRETS[ $field ] ) ) {
 				$value           = trim( sanitize_text_field( $value ) );
-				$clean[ $field ] = ! empty( $input[ self::REMOVE_KEY_FIELD ] ) ? '' : ( '' === $value ? $previous : $value );
+				$clean[ $field ] = ! empty( $input[ self::SECRETS[ $field ] ] ) ? '' : ( '' === $value ? $previous : $value );
 			} elseif ( Settings::FROM_EMAIL === $field ) {
 				$clean[ $field ] = sanitize_email( $value );
 				if ( '' !== trim( $value ) && '' === $clean[ $field ] ) {
@@ -147,7 +158,14 @@ final class SettingsPage {
 		echo '<form method="post" action="' . esc_url( admin_url( 'options.php' ) ) . '">';
 		settings_fields( self::GROUP );
 		echo '<table class="form-table" role="presentation"><tbody>';
-		$this->render_api_key_row();
+		$this->render_secret_row(
+			Settings::API_KEY,
+			__( 'API key', 'connector-for-sendora' ),
+			__( "A server key from Sendora's dashboard. A test server's key (sk_test_…) sends nothing to anyone.", 'connector-for-sendora' ),
+			__( 'A key is saved; enter a new one to replace it', 'connector-for-sendora' ),
+			'sk_live_…',
+			__( 'Remove the saved key', 'connector-for-sendora' )
+		);
 		$this->render_row(
 			Settings::TRANSACTIONAL_STREAM,
 			__( 'Transactional stream id', 'connector-for-sendora' ),
@@ -169,9 +187,19 @@ final class SettingsPage {
 			__( 'From name', 'connector-for-sendora' ),
 			__( 'Used when a message names no sender.', 'connector-for-sendora' )
 		);
+		$this->render_secret_row(
+			Settings::WEBHOOK_SECRET,
+			__( 'Webhook signing secret', 'connector-for-sendora' ),
+			__( 'The secret Sendora shows once, when the webhook is created. Without it the webhook answers 503, and Sendora keeps retrying.', 'connector-for-sendora' ),
+			__( 'A secret is saved; enter a new one to replace it', 'connector-for-sendora' ),
+			'',
+			__( 'Remove the saved secret', 'connector-for-sendora' )
+		);
 		echo '</tbody></table>';
 		submit_button();
 		echo '</form>';
+
+		$this->render_webhook();
 
 		$this->render_test_form();
 		echo '</div>';
@@ -303,37 +331,60 @@ final class SettingsPage {
 		);
 	}
 
-	/** The API key's row: never shows the key, only whether one is saved. */
-	private function render_api_key_row(): void {
-		$id = 'connector-for-sendora-' . Settings::API_KEY;
-		echo '<tr><th scope="row"><label for="' . esc_attr( $id ) . '">' . esc_html__( 'API key', 'connector-for-sendora' ) . '</label>';
-		if ( $this->settings->is_test_mode() ) {
+	/**
+	 * A secret's row: never shows the secret, only whether one is saved.
+	 *
+	 * @param string $field        The setting.
+	 * @param string $label        Its label.
+	 * @param string $description  What it is for.
+	 * @param string $saved_hint   The placeholder when one is saved.
+	 * @param string $empty_hint   The placeholder when none is.
+	 * @param string $remove_label The label of the checkbox that removes the saved one.
+	 */
+	private function render_secret_row( string $field, string $label, string $description, string $saved_hint, string $empty_hint, string $remove_label ): void {
+		$id = 'connector-for-sendora-' . $field;
+		echo '<tr><th scope="row"><label for="' . esc_attr( $id ) . '">' . esc_html( $label ) . '</label>';
+		if ( Settings::API_KEY === $field && $this->settings->is_test_mode() ) {
 			echo ' <span class="connector-for-sendora-test-mode">(' . esc_html__( 'test mode', 'connector-for-sendora' ) . ')</span>';
 		}
 		echo '</th><td>';
 
-		if ( $this->settings->is_constant( Settings::API_KEY ) ) {
+		if ( $this->settings->is_constant( $field ) ) {
 			echo '<input type="password" id="' . esc_attr( $id ) . '" class="regular-text" value="" placeholder="' . esc_attr__( 'Set in wp-config.php', 'connector-for-sendora' ) . '" readonly disabled />';
-			echo '<p class="description">' . esc_html( self::constant_note( Settings::API_KEY ) ) . '</p></td></tr>';
+			echo '<p class="description">' . esc_html( self::constant_note( $field ) ) . '</p></td></tr>';
 			return;
 		}
 
-		$saved = '' !== $this->settings->get( Settings::API_KEY );
+		$saved = '' !== $this->settings->get( $field );
 		printf(
 			'<input type="password" id="%s" name="%s" class="regular-text" value="" autocomplete="off" placeholder="%s" />',
 			esc_attr( $id ),
-			esc_attr( Settings::OPTION . '[' . Settings::API_KEY . ']' ),
-			esc_attr( $saved ? __( 'A key is saved; enter a new one to replace it', 'connector-for-sendora' ) : 'sk_live_…' )
+			esc_attr( Settings::OPTION . '[' . $field . ']' ),
+			esc_attr( $saved ? $saved_hint : $empty_hint )
 		);
-		echo '<p class="description">' . esc_html__( "A server key from Sendora's dashboard. A test server's key (sk_test_…) sends nothing to anyone.", 'connector-for-sendora' ) . '</p>';
+		echo '<p class="description">' . esc_html( $description ) . '</p>';
 		if ( $saved ) {
 			printf(
 				'<p><label><input type="checkbox" name="%s" value="1" /> %s</label></p>',
-				esc_attr( Settings::OPTION . '[' . self::REMOVE_KEY_FIELD . ']' ),
-				esc_html__( 'Remove the saved key', 'connector-for-sendora' )
+				esc_attr( Settings::OPTION . '[' . self::SECRETS[ $field ] . ']' ),
+				esc_html( $remove_label )
 			);
 		}
 		echo '</td></tr>';
+	}
+
+	/** Where Sendora sends its delivery reports, and which to subscribe to. */
+	private function render_webhook(): void {
+		echo '<h2>' . esc_html__( 'Delivery reports', 'connector-for-sendora' ) . '</h2>';
+		echo '<p>' . esc_html__( "Create a webhook in Sendora's dashboard with this address, and paste its signing secret above:", 'connector-for-sendora' ) . '</p>';
+		echo '<p><input type="text" class="large-text code" value="' . esc_attr( Webhook::url() ) . '" readonly onfocus="this.select()" /></p>';
+		echo '<p>' . esc_html__( 'Subscribe it to these events:', 'connector-for-sendora' ) . ' <code>' . implode( '</code>, <code>', array_map( 'esc_html', Webhook::EVENTS ) ) . '</code></p>';
+		printf(
+			'<p>%s <a href="%s">%s</a></p>',
+			esc_html__( 'A hard bounce stops all mail to the address; a complaint or an unsubscribe stops broadcasts to it.', 'connector-for-sendora' ),
+			esc_url( SuppressionPage::url() ),
+			esc_html__( 'Suppressed addresses', 'connector-for-sendora' )
+		);
 	}
 
 	/**

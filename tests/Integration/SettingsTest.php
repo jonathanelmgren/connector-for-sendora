@@ -40,6 +40,7 @@ final class SettingsTest extends TestCase {
 				Settings::BROADCAST_STREAM     => 'CONNECTOR_FOR_SENDORA_BROADCAST_STREAM',
 				Settings::FROM_EMAIL           => 'CONNECTOR_FOR_SENDORA_FROM_EMAIL',
 				Settings::FROM_NAME            => 'CONNECTOR_FOR_SENDORA_FROM_NAME',
+				Settings::WEBHOOK_SECRET       => 'CONNECTOR_FOR_SENDORA_WEBHOOK_SECRET',
 			),
 			Settings::CONSTANTS
 		);

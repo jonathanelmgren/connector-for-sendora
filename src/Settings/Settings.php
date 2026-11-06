@@ -26,6 +26,7 @@ final class Settings {
 	public const BROADCAST_STREAM     = 'broadcast_stream';
 	public const FROM_EMAIL           = 'from_email';
 	public const FROM_NAME            = 'from_name';
+	public const WEBHOOK_SECRET       = 'webhook_secret';
 
 	/** Each setting and the wp-config.php constant that can set it instead. */
 	public const CONSTANTS = array(
@@ -34,6 +35,7 @@ final class Settings {
 		self::BROADCAST_STREAM     => 'CONNECTOR_FOR_SENDORA_BROADCAST_STREAM',
 		self::FROM_EMAIL           => 'CONNECTOR_FOR_SENDORA_FROM_EMAIL',
 		self::FROM_NAME            => 'CONNECTOR_FOR_SENDORA_FROM_NAME',
+		self::WEBHOOK_SECRET       => 'CONNECTOR_FOR_SENDORA_WEBHOOK_SECRET',
 	);
 
 	/**

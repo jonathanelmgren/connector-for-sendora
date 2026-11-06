@@ -134,6 +134,32 @@ final class SettingsPageTest extends TestCase {
 		$this->assertNotEmpty( get_settings_errors( Settings::OPTION ) );
 	}
 
+	public function test_the_page_shows_the_webhook_address_and_its_events(): void {
+		$page = $this->render( new Settings() );
+
+		$this->assertStringContainsString( esc_attr( rest_url( 'connector-for-sendora/v1/webhook' ) ), $page );
+		$this->assertStringContainsString( '<code>bounced</code>, <code>spam_complaint</code>, <code>unsubscribed</code>', $page );
+	}
+
+	public function test_a_saved_webhook_secret_is_never_written_into_the_page(): void {
+		$this->configure( array( Settings::WEBHOOK_SECRET => 'whsec_saved_secret' ) );
+
+		$page = $this->render( new Settings() );
+
+		$this->assertStringNotContainsString( 'whsec_saved_secret', $page );
+		$this->assertStringContainsString( 'A secret is saved', $page );
+		$this->assertStringContainsString( 'Remove the saved secret', $page );
+	}
+
+	public function test_saving_an_empty_secret_field_keeps_the_saved_secret_and_it_can_be_removed(): void {
+		$this->configure( array( Settings::WEBHOOK_SECRET => 'whsec_saved_secret' ) );
+		$page = new SettingsPage( new Settings() );
+
+		$this->assertSame( 'whsec_saved_secret', $page->sanitize( array( Settings::WEBHOOK_SECRET => '' ) )[ Settings::WEBHOOK_SECRET ] );
+		$this->assertSame( '', $page->sanitize( array( SettingsPage::REMOVE_WEBHOOK_SECRET_FIELD => '1' ) )[ Settings::WEBHOOK_SECRET ] );
+		$this->assertSame( 'whsec_saved_secret', $page->sanitize( array( SettingsPage::REMOVE_KEY_FIELD => '1' ) )[ Settings::WEBHOOK_SECRET ] );
+	}
+
 	public function test_the_test_email_goes_through_sendora(): void {
 		$this->configure();
 
