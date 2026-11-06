@@ -36,6 +36,9 @@ final class MessageBuilder {
 	 */
 	private const STREAM_WRAPPER_PATH = '#^[a-z][a-z\d+.-]*://#i';
 
+	/** The error code for a broadcast on a site with no broadcast stream set. */
+	public const ERROR_NO_BROADCAST_STREAM = 'broadcast_stream_missing';
+
 	/** The error code for a message whose charset cannot be converted to UTF-8. */
 	public const ERROR_UNSUPPORTED_CHARSET = 'unsupported_charset';
 
@@ -71,7 +74,7 @@ final class MessageBuilder {
 	 * plugin's own settings are UTF-8 already.
 	 *
 	 * @param array<string, mixed> $atts wp_mail()'s arguments: to, subject, message, headers, attachments.
-	 * @throws SendFailed The message has no recipient (no To, Cc or Bcc), or its charset cannot be converted.
+	 * @throws SendFailed The message has no recipient (no To, Cc or Bcc), its charset cannot be converted, or it is a broadcast and no broadcast stream is set.
 	 */
 	public function build( array $atts ): Message {
 		$to = self::list_of( $atts['to'] ?? array(), ',' );
@@ -82,6 +85,7 @@ final class MessageBuilder {
 		$cc           = array();
 		$bcc          = array();
 		$reply_to     = array();
+		$stream       = null;
 		$headers      = array();
 		foreach ( self::list_of( $atts['headers'] ?? array(), "\n" ) as $header ) {
 			if ( ! str_contains( $header, ':' ) ) {
@@ -103,6 +107,9 @@ final class MessageBuilder {
 					break;
 				case 'reply-to':
 					$reply_to = array_merge( $reply_to, explode( ',', $content ) );
+					break;
+				case strtolower( Stream::HEADER ):
+					$stream = $content;
 					break;
 				default:
 					if ( ! in_array( strtolower( $name ), self::STRUCTURAL_HEADERS, true ) && '' !== $name ) {
@@ -127,6 +134,12 @@ final class MessageBuilder {
 			throw new SendFailed( __( 'The message has no recipient.', 'connector-for-sendora' ), 'no_recipient' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
 		}
 
+		$broadcast = Stream::BROADCAST === Stream::choose( $stream, $atts );
+		$stream_id = self::non_empty( $this->settings->get( $broadcast ? Settings::BROADCAST_STREAM : Settings::TRANSACTIONAL_STREAM ) );
+		if ( $broadcast && null === $stream_id ) {
+			throw new SendFailed( __( 'The message is a broadcast, and no broadcast stream is set.', 'connector-for-sendora' ), self::ERROR_NO_BROADCAST_STREAM ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
+		}
+
 		$body = $utf8( (string) ( $atts['message'] ?? '' ) );
 		$html = self::CONTENT_TYPE_HTML === strtolower( $content_type );
 
@@ -141,7 +154,8 @@ final class MessageBuilder {
 			reply_to: self::addresses( array_map( $utf8, $reply_to ) ),
 			headers: array_map( $utf8, $headers ),
 			attachments: self::attachments( $atts['attachments'] ?? array() ),
-			stream_id: self::non_empty( $this->settings->get( Settings::TRANSACTIONAL_STREAM ) ),
+			stream_id: $stream_id,
+			broadcast: $broadcast,
 		);
 	}
 

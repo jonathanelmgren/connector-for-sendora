@@ -34,6 +34,13 @@ final class FakeTransport implements Transport {
 	public ?SendFailed $failure = null;
 
 	/**
+	 * How many sends are accepted before the failure applies.
+	 *
+	 * @var int
+	 */
+	public int $accept_first = 0;
+
+	/**
 	 * How many sends were tried, failed ones included.
 	 *
 	 * @var int
@@ -48,7 +55,7 @@ final class FakeTransport implements Transport {
 	 */
 	public function send( Message $message ): string {
 		++$this->attempts;
-		if ( null !== $this->failure ) {
+		if ( null !== $this->failure && $this->attempts > $this->accept_first ) {
 			throw $this->failure;
 		}
 		$this->sent[] = $message;

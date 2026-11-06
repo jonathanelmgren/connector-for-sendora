@@ -18,9 +18,28 @@ Each setting can be saved on the settings page, or set in `wp-config.php`, which
 
 Settings saved on the page are kept in the option `connector_for_sendora_settings`. A saved API key is never shown again. A test server's key (`sk_test_…`) puts the plugin in test mode: Sendora accepts the mail and delivers none of it.
 
-A sent message fires `wp_mail_succeeded` with the message's data and `sendora_message_ids`, the ids Sendora gave it: one, or one per recipient for a message with only Bcc recipients, which goes to each of them alone.
+A sent message fires `wp_mail_succeeded` with the message's data and `sendora_message_ids`, the ids Sendora gave it: one, or one per recipient for a broadcast or a message with only Bcc recipients, which go to each recipient alone.
 
-A failed send makes `wp_mail()` return false and fires `wp_mail_failed` with a `WP_Error` whose data adds `sendora_error_code` and `sendora_status` to the message's data.
+A failed send makes `wp_mail()` return false and fires `wp_mail_failed` with a `WP_Error` whose data adds `sendora_error_code` and `sendora_status` to the message's data. A message sent as several that fails part way also adds `sendora_message_ids` and `sendora_sent_to`: the ids and addresses of the sends that went out before the failure.
+
+### Transactional mail and broadcasts
+
+Every message goes on the transactional stream unless something asks for the broadcast stream:
+
+- the filter `connector_for_sendora_stream` returns `'broadcast'`. It receives the current choice, `'transactional'` or `'broadcast'`, and the full `wp_mail()` arguments, so a newsletter plugin can recognise its own messages;
+- the message carries the header `X-Sendora-Stream: broadcast`, for plugins that can only add headers. The header is never sent.
+
+Any other value means transactional. Sendora's rules for a broadcast are enforced before it is sent:
+
+- The filter `connector_for_sendora_broadcast_message` gets the `ConnectorForSendora\Mail\Message` and the `wp_mail()` arguments first, and returns the message to send, for instance with `{{ unsubscribe_url }}` in place of its own unsubscribe link (`$message->with_text()`, `$message->with_html()`). The message stays on the broadcast stream whatever the returned one says.
+- An HTML-only message gets a text part written from its HTML, in which a link keeps its address: `<a href="{{ unsubscribe_url }}">Unsubscribe</a>` becomes `Unsubscribe ({{ unsubscribe_url }})`.
+- A text or HTML part without `{{ unsubscribe_url }}` is refused. Sendora puts each recipient's own unsubscribe link there.
+- `List-Unsubscribe` and `List-Unsubscribe-Post` headers are removed: Sendora sets them.
+- The message goes to each of its To, Cc and Bcc recipients alone, so each gets their own link.
+
+A refused broadcast, or one on a site with no broadcast stream set, is never sent on the transactional stream instead: `wp_mail()` returns false and fires `wp_mail_failed` with a `WP_Error` that says which rule failed, and whose `sendora_error_code` is `unsubscribe_url_missing` or `broadcast_stream_missing`.
+
+### Other filters
 
 The filter `connector_for_sendora_transport` can return a `ConnectorForSendora\Mail\Transport` to send through something other than Sendora's API.
 
