@@ -18,7 +18,9 @@ use WP_Error;
  *
  * As wp_mail() does, a send fires `wp_mail_succeeded` with the message's
  * data, and a failure fires `wp_mail_failed` with a WP_Error whose data adds
- * Sendora's error code and HTTP status to the message's data.
+ * Sendora's error code and HTTP status to the message's data. A message
+ * that goes out as several sends (see {@see Message::deliveries()}) stops
+ * at the first that fails.
  */
 final class Mailer {
 
@@ -63,8 +65,11 @@ final class Mailer {
 		);
 
 		try {
-			$message = ( new MessageBuilder( $this->settings ) )->build( $atts );
-			( $this->transports )()->send( $message );
+			$message   = ( new MessageBuilder( $this->settings ) )->build( $atts );
+			$transport = ( $this->transports )();
+			foreach ( $message->deliveries() as $delivery ) {
+				$transport->send( $delivery );
+			}
 		} catch ( SendFailed $failure ) {
 			$mail_data['sendora_error_code'] = $failure->error_code;
 			$mail_data['sendora_status']     = $failure->status;

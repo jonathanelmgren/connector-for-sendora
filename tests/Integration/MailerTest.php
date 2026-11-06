@@ -203,6 +203,50 @@ final class MailerTest extends TestCase {
 		$this->assertSame( array(), $this->transport->sent );
 	}
 
+	public function test_a_message_with_only_cc_goes_to_the_cc_recipients(): void {
+		$this->configure();
+
+		$this->assertTrue( wp_mail( '', 'Hi', 'Body', array( 'Cc: cc1@example.com, cc2@example.com', 'Bcc: bcc@example.com' ) ) );
+
+		$this->assertCount( 1, $this->transport->sent );
+		$message = $this->transport->sent[0];
+		$this->assertEquals( array( new Address( 'cc1@example.com' ), new Address( 'cc2@example.com' ) ), $message->to );
+		$this->assertSame( array(), $message->cc );
+		$this->assertEquals( array( new Address( 'bcc@example.com' ) ), $message->bcc );
+	}
+
+	public function test_a_message_with_only_bcc_goes_to_each_recipient_alone(): void {
+		$this->configure();
+
+		$this->assertTrue( wp_mail( '', 'Hi', 'Body', 'Bcc: one@example.com, Two <two@example.com>' ) );
+
+		$this->assertCount( 2, $this->transport->sent );
+		$this->assertEquals( array( new Address( 'one@example.com' ) ), $this->transport->sent[0]->to );
+		$this->assertEquals( array( new Address( 'two@example.com', 'Two' ) ), $this->transport->sent[1]->to );
+		foreach ( $this->transport->sent as $message ) {
+			$this->assertSame( array(), $message->cc );
+			$this->assertSame( array(), $message->bcc );
+			$this->assertSame( 'Hi', $message->subject );
+		}
+	}
+
+	public function test_a_message_sent_as_several_stops_at_the_first_failure(): void {
+		$this->configure();
+		$this->transport->failure = new SendFailed( 'Refused.', 'invalid_request', self::STATUS_UNPROCESSABLE );
+		$failed                   = 0;
+		add_action(
+			'wp_mail_failed',
+			static function () use ( &$failed ): void {
+				++$failed;
+			}
+		);
+
+		$this->assertFalse( wp_mail( '', 'Hi', 'Body', 'Bcc: one@example.com, two@example.com' ) );
+
+		$this->assertSame( 1, $failed );
+		$this->assertSame( 1, $this->transport->attempts );
+	}
+
 	public function test_a_sent_message_fires_wp_mail_succeeded(): void {
 		$this->configure();
 		$succeeded = array();

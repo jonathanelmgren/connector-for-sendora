@@ -34,12 +34,20 @@ final class FakeTransport implements Transport {
 	public ?SendFailed $failure = null;
 
 	/**
+	 * How many sends were tried, failed ones included.
+	 *
+	 * @var int
+	 */
+	public int $attempts = 0;
+
+	/**
 	 * Keeps the message, or throws the failure it was given.
 	 *
 	 * @param Message $message The message.
 	 * @throws SendFailed When told to fail.
 	 */
 	public function send( Message $message ): string {
+		++$this->attempts;
 		if ( null !== $this->failure ) {
 			throw $this->failure;
 		}

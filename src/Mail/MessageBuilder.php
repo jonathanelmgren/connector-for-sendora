@@ -57,13 +57,10 @@ final class MessageBuilder {
 	 * The message wp_mail() was asked to send.
 	 *
 	 * @param array<string, mixed> $atts wp_mail()'s arguments: to, subject, message, headers, attachments.
-	 * @throws SendFailed The message has no recipient.
+	 * @throws SendFailed The message has no recipient: no To, Cc or Bcc.
 	 */
 	public function build( array $atts ): Message {
 		$to = self::addresses( self::list_of( $atts['to'] ?? array(), ',' ) );
-		if ( array() === $to ) {
-			throw new SendFailed( __( 'The message has no recipient.', 'connector-for-sendora' ), 'no_recipient' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
-		}
 
 		$from         = null;
 		$content_type = null;
@@ -100,6 +97,12 @@ final class MessageBuilder {
 			}
 		}
 
+		$cc  = self::addresses( $cc );
+		$bcc = self::addresses( $bcc );
+		if ( array() === $to && array() === $cc && array() === $bcc ) {
+			throw new SendFailed( __( 'The message has no recipient.', 'connector-for-sendora' ), 'no_recipient' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
+		}
+
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress's own hook, as wp_mail() uses it.		/** This filter is documented in wp-includes/pluggable.php. */
 		$content_type = (string) apply_filters( 'wp_mail_content_type', $content_type ?? self::CONTENT_TYPE_TEXT );
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress's own hook, as wp_mail() uses it.		/** This filter is documented in wp-includes/pluggable.php. */
@@ -114,8 +117,8 @@ final class MessageBuilder {
 			subject: self::to_utf8( (string) ( $atts['subject'] ?? '' ), $charset ),
 			text: $html ? null : $body,
 			html: $html ? $body : null,
-			cc: self::addresses( $cc ),
-			bcc: self::addresses( $bcc ),
+			cc: $cc,
+			bcc: $bcc,
 			reply_to: self::addresses( $reply_to ),
 			headers: $headers,
 			attachments: self::attachments( $atts['attachments'] ?? array() ),
