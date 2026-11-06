@@ -24,7 +24,7 @@ final class Schema {
 	public const VERSION_OPTION = 'connector_for_sendora_db_version';
 
 	/** The schema's version; raise it with every change to a table below. */
-	public const VERSION = '1';
+	public const VERSION = '2';
 
 	/**
 	 * The longest address the list keeps: RFC 5321's limit on a path,
@@ -38,8 +38,27 @@ final class Schema {
 	 */
 	private const INDEX_PREFIX = 191;
 
-	/** The length of a delivery id's SHA-256, in hex. */
-	private const DELIVERY_HASH_LENGTH = 64;
+	/**
+	 * The hash a value is keyed on when the value itself may be too long
+	 * for a key: an address, a delivery's id.
+	 */
+	private const HASH_ALGO = 'sha256';
+
+	/** The length of a {@see self::HASH_ALGO} hash, in hex. */
+	private const HASH_LENGTH = 64;
+
+	/** The width MySQL's SHA2() is asked for, which gives {@see self::HASH_ALGO}. */
+	private const SQL_SHA2_BITS = 256;
+
+	/**
+	 * The key a value is kept under, in a column of {@see self::HASH_LENGTH}
+	 * characters.
+	 *
+	 * @param string $value The value.
+	 */
+	public static function hash( string $value ): string {
+		return hash( self::HASH_ALGO, $value );
+	}
 
 	/** Brings the tables up to date when the schema has changed. */
 	public static function maybe_upgrade(): void {
@@ -49,29 +68,37 @@ final class Schema {
 		self::install();
 	}
 
-	/** Creates or updates the tables. */
+	/**
+	 * Creates or updates the tables. The version is saved only once both
+	 * tables are there, so a failed install is tried again on the next
+	 * request.
+	 */
 	public static function install(): void {
 		global $wpdb;
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		self::key_suppressions_on_hash();
 
 		$charset     = $wpdb->get_charset_collate();
 		$suppression = SuppressionList::table();
 		$deliveries  = DeliveryLog::table();
 		$email       = self::EMAIL_LENGTH;
 		$prefix      = self::INDEX_PREFIX;
-		$hash        = self::DELIVERY_HASH_LENGTH;
+		$hash        = self::HASH_LENGTH;
 
 		// dbDelta() wants each column on its own line and two spaces after PRIMARY KEY.
 		dbDelta(
 			"CREATE TABLE {$suppression} (
   id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   email varchar({$email}) NOT NULL,
+  email_hash char({$hash}) NOT NULL,
   reason varchar(20) NOT NULL,
   source varchar(20) NOT NULL,
   stream_id varchar({$prefix}) DEFAULT NULL,
   suppressed_at datetime NOT NULL,
   PRIMARY KEY  (id),
-  UNIQUE KEY email_reason (email({$prefix}),reason)
+  UNIQUE KEY email_reason (email_hash,reason),
+  KEY email (email({$prefix}))
 ) {$charset};
 CREATE TABLE {$deliveries} (
   delivery_hash char({$hash}) NOT NULL,
@@ -81,6 +108,43 @@ CREATE TABLE {$deliveries} (
 ) {$charset};"
 		);
 
-		update_option( self::VERSION_OPTION, self::VERSION );
+		if ( self::exists( $suppression ) && self::exists( $deliveries ) ) {
+			update_option( self::VERSION_OPTION, self::VERSION );
+		}
+	}
+
+	/**
+	 * Whether the table is there.
+	 *
+	 * @param string $table The table's name.
+	 */
+	private static function exists( string $table ): bool {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- checks the schema once, after an install.
+		return $table === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) );
+	}
+
+	/**
+	 * Moves a suppression table from version 1, whose unique key covered
+	 * only an address's first {@see self::INDEX_PREFIX} characters, onto a
+	 * key of the address's hash. dbDelta() then adds the new keys; it never
+	 * drops or changes one.
+	 */
+	private static function key_suppressions_on_hash(): void {
+		global $wpdb;
+		$table = SuppressionList::table();
+		if ( ! self::exists( $table ) ) {
+			return;
+		}
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange -- the plugin's own table, changed once on upgrade.
+		$prefix_keyed = null !== $wpdb->get_row( $wpdb->prepare( 'SHOW INDEX FROM %i WHERE Key_name = %s AND Column_name = %s', $table, 'email_reason', 'email' ) );
+		if ( $prefix_keyed ) {
+			if ( null === $wpdb->get_row( $wpdb->prepare( 'SHOW COLUMNS FROM %i LIKE %s', $table, 'email_hash' ) ) ) {
+				$wpdb->query( $wpdb->prepare( 'ALTER TABLE %i ADD COLUMN email_hash char(%d) NOT NULL AFTER email', $table, self::HASH_LENGTH ) );
+			}
+			$wpdb->query( $wpdb->prepare( 'UPDATE %i SET email_hash = SHA2(email, %d)', $table, self::SQL_SHA2_BITS ) );
+			$wpdb->query( $wpdb->prepare( 'ALTER TABLE %i DROP INDEX email_reason', $table ) );
+		}
+		// phpcs:enable
 	}
 }

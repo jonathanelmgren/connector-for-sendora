@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace ConnectorForSendora\Webhook;
 
+use ConnectorForSendora\Database\Schema;
+
 /**
  * Sendora delivers each event at least once, so a delivery's id is
  * recorded when it is handled, and a second delivery with the same id
@@ -22,9 +24,6 @@ final class DeliveryLog {
 
 	/** The table's name without the site's prefix. */
 	private const TABLE = 'connector_for_sendora_webhook_deliveries';
-
-	/** The hash a delivery's id is kept as, which fits the table's key whatever the id's length. */
-	private const HASH = 'sha256';
 
 	/** How a time is written in the table, always in UTC. */
 	private const DATE_FORMAT = 'Y-m-d H:i:s';
@@ -65,11 +64,12 @@ final class DeliveryLog {
 	}
 
 	/**
-	 * The key a delivery is kept under.
+	 * The key a delivery is kept under, which fits the table's key whatever
+	 * the id's length.
 	 *
 	 * @param string $delivery_id The delivery's id.
 	 */
 	private static function key( string $delivery_id ): string {
-		return hash( self::HASH, $delivery_id );
+		return Schema::hash( $delivery_id );
 	}
 }

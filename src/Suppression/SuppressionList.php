@@ -9,13 +9,15 @@ declare(strict_types=1);
 
 namespace ConnectorForSendora\Suppression;
 
+use ConnectorForSendora\Database\Schema;
 use ConnectorForSendora\Mail\Stream;
 use DateTimeImmutable;
 use DateTimeZone;
 
 /**
  * The suppression list, in its own table: one row per address and reason,
- * the address in lower case.
+ * the address in lower case and keyed on its hash, which covers the whole
+ * address however long it is.
  *
  * A hard bounce stops all mail to the address. A complaint or an
  * unsubscribe stops broadcasts only, so a password reset still arrives.
@@ -85,7 +87,7 @@ final class SuppressionList {
 	public function add( string $email, string $reason, string $source, ?string $stream_id = null, ?DateTimeImmutable $when = null ): void {
 		global $wpdb;
 		$email = self::normalise( $email );
-		if ( '' === $email || strlen( $email ) > \ConnectorForSendora\Database\Schema::EMAIL_LENGTH ) {
+		if ( '' === $email || strlen( $email ) > Schema::EMAIL_LENGTH ) {
 			throw new \InvalidArgumentException( 'The address is empty or too long for the suppression list.' );
 		}
 		if ( ! in_array( $reason, self::REASONS, true ) || ! in_array( $source, self::SOURCES, true ) ) {
@@ -97,10 +99,11 @@ final class SuppressionList {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- the plugin's own table; nothing caches it.
 		$wpdb->query(
 			$wpdb->prepare(
-				'INSERT INTO %i (email, reason, source, stream_id, suppressed_at) VALUES (%s, %s, %s, NULLIF(%s, \'\'), %s)
+				'INSERT INTO %i (email, email_hash, reason, source, stream_id, suppressed_at) VALUES (%s, %s, %s, %s, NULLIF(%s, \'\'), %s)
 				ON DUPLICATE KEY UPDATE source = VALUES(source), stream_id = VALUES(stream_id), suppressed_at = VALUES(suppressed_at)',
 				self::table(),
 				$email,
+				Schema::hash( $email ),
 				$reason,
 				$source,
 				$stream_id ?? '',
