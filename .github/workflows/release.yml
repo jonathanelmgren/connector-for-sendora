@@ -42,7 +42,9 @@ jobs:
 
       # On a tag, the build fails unless the tag is the plugin's version.
       - name: Build
-        run: node bin/build.mjs ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+        env:
+          RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+        run: node bin/build.mjs "$RELEASE_TAG"
 
       - uses: actions/upload-artifact@v4
         with:
