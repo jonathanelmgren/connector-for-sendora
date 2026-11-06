@@ -29,6 +29,9 @@ final class MessageBuilder {
 	/** The charset Sendora's API takes text in. */
 	private const UTF8 = 'UTF-8';
 
+	/** The error code for a message whose charset cannot be converted to UTF-8. */
+	public const ERROR_UNSUPPORTED_CHARSET = 'unsupported_charset';
+
 	/**
 	 * Headers the message carries in its own fields, or that the message
 	 * format sets, so none of them goes on as a custom header.
@@ -56,11 +59,15 @@ final class MessageBuilder {
 	/**
 	 * The message wp_mail() was asked to send.
 	 *
+	 * Every text the message brings (its subject, body, mailboxes and
+	 * headers) is converted from the message's charset to UTF-8; the
+	 * plugin's own settings are UTF-8 already.
+	 *
 	 * @param array<string, mixed> $atts wp_mail()'s arguments: to, subject, message, headers, attachments.
-	 * @throws SendFailed The message has no recipient: no To, Cc or Bcc.
+	 * @throws SendFailed The message has no recipient (no To, Cc or Bcc), or its charset cannot be converted.
 	 */
 	public function build( array $atts ): Message {
-		$to = self::addresses( self::list_of( $atts['to'] ?? array(), ',' ) );
+		$to = self::list_of( $atts['to'] ?? array(), ',' );
 
 		$from         = null;
 		$content_type = null;
@@ -76,7 +83,7 @@ final class MessageBuilder {
 			[ $name, $content ] = array_map( 'trim', explode( ':', trim( $header ), 2 ) );
 			switch ( strtolower( $name ) ) {
 				case 'from':
-					$from = Address::parse( $content );
+					$from = $content;
 					break;
 				case 'content-type':
 					[ $content_type, $charset ] = self::content_type( $content, $content_type, $charset );
@@ -97,30 +104,33 @@ final class MessageBuilder {
 			}
 		}
 
-		$cc  = self::addresses( $cc );
-		$bcc = self::addresses( $bcc );
-		if ( array() === $to && array() === $cc && array() === $bcc ) {
-			throw new SendFailed( __( 'The message has no recipient.', 'connector-for-sendora' ), 'no_recipient' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
-		}
-
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress's own hook, as wp_mail() uses it.		/** This filter is documented in wp-includes/pluggable.php. */
 		$content_type = (string) apply_filters( 'wp_mail_content_type', $content_type ?? self::CONTENT_TYPE_TEXT );
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress's own hook, as wp_mail() uses it.		/** This filter is documented in wp-includes/pluggable.php. */
 		$charset = (string) apply_filters( 'wp_mail_charset', $charset ?? get_bloginfo( 'charset' ) );
 
-		$body = self::to_utf8( (string) ( $atts['message'] ?? '' ), $charset );
+		$utf8 = static fn ( string $text ): string => self::to_utf8( $text, $charset );
+
+		$to  = self::addresses( array_map( $utf8, $to ) );
+		$cc  = self::addresses( array_map( $utf8, $cc ) );
+		$bcc = self::addresses( array_map( $utf8, $bcc ) );
+		if ( array() === $to && array() === $cc && array() === $bcc ) {
+			throw new SendFailed( __( 'The message has no recipient.', 'connector-for-sendora' ), 'no_recipient' ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
+		}
+
+		$body = $utf8( (string) ( $atts['message'] ?? '' ) );
 		$html = self::CONTENT_TYPE_HTML === strtolower( $content_type );
 
 		return new Message(
-			from: $this->from( $from ),
+			from: $this->from( null === $from ? null : Address::parse( $utf8( $from ) ) ),
 			to: $to,
-			subject: self::to_utf8( (string) ( $atts['subject'] ?? '' ), $charset ),
+			subject: $utf8( (string) ( $atts['subject'] ?? '' ) ),
 			text: $html ? null : $body,
 			html: $html ? $body : null,
 			cc: $cc,
 			bcc: $bcc,
-			reply_to: self::addresses( $reply_to ),
-			headers: $headers,
+			reply_to: self::addresses( array_map( $utf8, $reply_to ) ),
+			headers: array_map( $utf8, $headers ),
 			attachments: self::attachments( $atts['attachments'] ?? array() ),
 			stream_id: self::non_empty( $this->settings->get( Settings::TRANSACTIONAL_STREAM ) ),
 		);
@@ -233,21 +243,39 @@ final class MessageBuilder {
 	}
 
 	/**
-	 * Text in UTF-8, which Sendora's API takes, from the message's charset.
+	 * Text in UTF-8, which Sendora's API takes, from the message's charset:
+	 * with mbstring, else with iconv.
 	 *
 	 * @param string $text    The text.
 	 * @param string $charset Its charset.
+	 * @throws SendFailed Neither knows the charset, or neither is installed.
 	 */
 	private static function to_utf8( string $text, string $charset ): string {
-		if ( '' === $charset || 0 === strcasecmp( $charset, self::UTF8 ) || ! function_exists( 'mb_convert_encoding' ) ) {
+		if ( '' === $charset || 0 === strcasecmp( $charset, self::UTF8 ) ) {
 			return $text;
 		}
-		try {
-			$converted = mb_convert_encoding( $text, self::UTF8, $charset );
-		} catch ( \ValueError ) {
-			return $text;
+		if ( function_exists( 'mb_convert_encoding' ) ) {
+			try {
+				$converted = mb_convert_encoding( $text, self::UTF8, $charset );
+				if ( is_string( $converted ) ) {
+					return $converted;
+				}
+			} catch ( \ValueError ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch -- mbstring does not know the charset; iconv may.
+			}
 		}
-		return is_string( $converted ) ? $converted : $text;
+		if ( function_exists( 'iconv' ) ) {
+			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- iconv warns about a charset it does not know, and answers false, which is handled here.
+			$converted = @iconv( $charset, self::UTF8, $text );
+			if ( is_string( $converted ) ) {
+				return $converted;
+			}
+		}
+		$failure = sprintf(
+			/* translators: %s: a charset, such as ISO-8859-1. */
+			__( 'The message is in the charset %s, which this server cannot convert to UTF-8.', 'connector-for-sendora' ),
+			$charset
+		);
+		throw new SendFailed( $failure, self::ERROR_UNSUPPORTED_CHARSET ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
 	}
 
 	/**

@@ -11,6 +11,7 @@ namespace ConnectorForSendora\Tests\Integration;
 
 use ConnectorForSendora\Mail\Address;
 use ConnectorForSendora\Mail\Mailer;
+use ConnectorForSendora\Mail\MessageBuilder;
 use ConnectorForSendora\Mail\SendFailed;
 use ConnectorForSendora\Settings\Settings;
 use WP_Error;
@@ -163,6 +164,59 @@ final class MailerTest extends TestCase {
 		wp_mail( 'anna@example.com', 'Hi', 'Body', '', array( '/no/such/file.pdf' ) );
 
 		$this->assertSame( array(), $this->transport->sent[0]->attachments );
+	}
+
+	public function test_text_in_another_charset_reaches_sendora_as_utf8(): void {
+		$this->configure();
+
+		$sent = wp_mail(
+			"Bj\xF6rn <bjorn@example.com>",
+			"Caf\xE9 order",
+			"Your caf\xE9 order",
+			array(
+				'Content-Type: text/plain; charset=ISO-8859-1',
+				"From: Andr\xE9 <shop@example.com>",
+				"Cc: Ren\xE9e <renee@example.com>",
+				"Reply-To: S\xF8ren <soren@example.com>",
+				"X-Note: na\xEFve",
+			)
+		);
+
+		$this->assertTrue( $sent );
+		$message = $this->transport->sent[0];
+		$this->assertEquals( new Address( 'shop@example.com', 'André' ), $message->from );
+		$this->assertEquals( array( new Address( 'bjorn@example.com', 'Björn' ) ), $message->to );
+		$this->assertEquals( array( new Address( 'renee@example.com', 'Renée' ) ), $message->cc );
+		$this->assertEquals( array( new Address( 'soren@example.com', 'Søren' ) ), $message->reply_to );
+		$this->assertSame( 'Café order', $message->subject );
+		$this->assertSame( 'Your café order', $message->text );
+		$this->assertSame( array( 'X-Note' => 'naïve' ), $message->headers );
+	}
+
+	public function test_the_charset_filter_sets_the_charset_text_is_converted_from(): void {
+		$this->configure();
+		add_filter( 'wp_mail_charset', static fn (): string => 'ISO-8859-1' );
+
+		wp_mail( 'anna@example.com', "Caf\xE9", 'Body' );
+
+		$this->assertSame( 'Café', $this->transport->sent[0]->subject );
+	}
+
+	public function test_a_charset_that_cannot_be_converted_fails_the_send(): void {
+		$this->configure();
+		$errors = array();
+		add_action(
+			'wp_mail_failed',
+			static function ( WP_Error $error ) use ( &$errors ): void {
+				$errors[] = $error;
+			}
+		);
+
+		$this->assertFalse( wp_mail( 'anna@example.com', 'Hi', 'Body', 'Content-Type: text/plain; charset=x-no-such-charset' ) );
+
+		$this->assertSame( array(), $this->transport->sent );
+		$this->assertCount( 1, $errors );
+		$this->assertSame( MessageBuilder::ERROR_UNSUPPORTED_CHARSET, $errors[0]->get_error_data()['sendora_error_code'] );
 	}
 
 	public function test_a_failed_send_returns_false_and_fires_wp_mail_failed_with_sendora_s_error(): void {
