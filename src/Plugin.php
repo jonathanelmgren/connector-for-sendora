@@ -10,8 +10,11 @@ declare(strict_types=1);
 namespace ConnectorForSendora;
 
 use ConnectorForSendora\Admin\SettingsPage;
+use ConnectorForSendora\Admin\SuppressionImport;
 use ConnectorForSendora\Admin\SuppressionPage;
+use ConnectorForSendora\Cli\ImportCommand;
 use ConnectorForSendora\Database\Schema;
+use ConnectorForSendora\Import\Importer;
 use ConnectorForSendora\Mail\Mailer;
 use ConnectorForSendora\Mail\Transport;
 use ConnectorForSendora\Sendora\SendoraTransport;
@@ -34,13 +37,17 @@ final class Plugin {
 
 		$settings    = new Settings();
 		$suppression = new SuppressionList();
+		$importer    = new Importer( $suppression );
 
 		( new Mailer( $settings, static fn (): Transport => self::transport( $settings ), $suppression ) )->register();
 		( new Webhook( $settings, $suppression, new DeliveryLog() ) )->register();
 
 		if ( is_admin() ) {
 			( new SettingsPage( $settings ) )->register();
-			( new SuppressionPage( $suppression ) )->register();
+			( new SuppressionPage( $suppression, new SuppressionImport( $importer ) ) )->register();
+		}
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			( new ImportCommand( $importer ) )->register();
 		}
 	}
 

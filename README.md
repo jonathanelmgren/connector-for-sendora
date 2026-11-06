@@ -49,7 +49,37 @@ Each address that bounced for good, complained or unsubscribed goes on a suppres
 - A hard bounce stops all mail to the address. A complaint or an unsubscribe stops broadcasts only, so a password reset still arrives. A soft bounce stops nothing.
 - A send leaves suppressed recipients out. The data of `wp_mail_succeeded` and `wp_mail_failed` lists them in `sendora_suppressed`, address to reason. When every recipient is left out, `wp_mail()` returns false and fires `wp_mail_failed` with a `WP_Error` that names them and whose `sendora_error_code` is `recipient_suppressed`.
 - The filter `connector_for_sendora_is_suppressed` has the last word. It receives whether the list skips the address, the address in lower case, the stream (`'transactional'` or `'broadcast'`) and the reason or null, and returns true to skip it.
-- **Tools → Sendora suppressions** lists the addresses, with a search, and removes one. Sendora keeps a suppression list of its own, which this does not change: only Sendora's support can take an address off it after a complaint or an unsubscribe.
+- **Tools → Sendora suppressions** lists the addresses, with a search, removes one, and imports an address verifier's results (below). Sendora keeps a suppression list of its own, which this does not change: only Sendora's support can take an address off it after a complaint or an unsubscribe.
+
+### Cleaning a list before the first send
+
+Sendora requires hard bounces to stay below 5 % of the messages sent, and an old list often fails that on the first send. Run the list through an address verifier, then import its results: each address whose status suppresses goes on the suppression list as `bounced`, source `import`. An address already on the list as a hard bounce is left as it is, so importing the same file again changes nothing.
+
+```sh
+wp connector-for-sendora import results.csv           # dry run: counts only, writes nothing
+wp connector-for-sendora import results.csv --apply   # writes
+```
+
+The file is CSV with a header row, separated by commas, semicolons or tabs; a UTF-8 byte order mark is fine. Options:
+
+| Option | Default | |
+|---|---|---|
+| `--email-column=<name>` | `email` | The column with the address. |
+| `--status-column=<name>` | `status` | The column with the verifier's status. |
+| `--statuses=<list>` | `undeliverable,invalid` | The statuses that suppress, comma-separated. |
+| `--verbose` | | Lists the addresses and the skipped rows as well. |
+
+Column names and statuses are matched whatever their case. The output gives counts only: rows read, addresses suppressed (or that would be), addresses already on the list, and rows skipped with why (a status that does not suppress, no address, an address that is not valid, an address repeated in the file).
+
+The same import is on **Tools → Sendora suppressions**, for a CSV file of up to 10 MB (or PHP's upload limit, if lower): the upload is read as a dry run and deleted, and nothing is written until the import is confirmed.
+
+Options for known verifiers' exports:
+
+| Verifier | Options |
+|---|---|
+| [Bouncer](https://www.usebouncer.com/) | none: its `email` and `status` columns and its `undeliverable` status are the defaults. |
+| [ZeroBounce](https://www.zerobounce.net/) | `--email-column="<your address column>" --status-column="ZB Status" --statuses=invalid`. ZeroBounce adds its columns to your own file, so the address column keeps the name it had. Add `spamtrap,abuse,do not mail` to suppress those too. |
+| [NeverBounce](https://neverbounce.com/) | `--status-column=<its result column> --statuses=invalid`. NeverBounce's result is one of `valid`, `invalid`, `disposable`, `catchall` and `unknown`; name the column it added, as your export's header row shows it. |
 
 For other plugins, such as a newsletter keeping its subscribers in step:
 
