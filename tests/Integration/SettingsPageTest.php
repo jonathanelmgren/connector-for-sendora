@@ -69,7 +69,7 @@ final class SettingsPageTest extends TestCase {
 		$this->configure( array( Settings::API_KEY => self::TEST_KEY ) );
 		$page = new SettingsPage( new Settings() );
 
-		$this->assertStringContainsString( 'Sendora is in test mode', self::output( array( $page, 'test_mode_notice' ) ) );
+		$this->assertStringContainsString( 'Connector for Sendora is in test mode', self::output( array( $page, 'test_mode_notice' ) ) );
 
 		$this->log_in( 'subscriber' );
 		$this->assertSame( '', self::output( array( $page, 'test_mode_notice' ) ) );

@@ -146,7 +146,7 @@ final class Mailer {
 			}
 			$failure = sprintf(
 				/* translators: %s: the recipients and why each is suppressed, such as "anna@example.com (hard bounce)". */
-				__( 'Not sent: every recipient is on the suppression list: %s.', 'sendora-for-wp' ),
+				__( 'Not sent: every recipient is on the suppression list: %s.', 'connector-for-sendora' ),
 				implode( ', ', $reasons )
 			);
 			throw new SendFailed( $failure, self::ERROR_ALL_SUPPRESSED ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.

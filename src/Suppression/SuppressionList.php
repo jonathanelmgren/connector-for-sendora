@@ -333,9 +333,9 @@ final class SuppressionList {
 	 */
 	public static function reason_label( string $reason ): string {
 		return match ( $reason ) {
-			self::BOUNCED      => __( 'hard bounce', 'sendora-for-wp' ),
-			self::COMPLAINED   => __( 'spam complaint', 'sendora-for-wp' ),
-			self::UNSUBSCRIBED => __( 'unsubscribed', 'sendora-for-wp' ),
+			self::BOUNCED      => __( 'hard bounce', 'connector-for-sendora' ),
+			self::COMPLAINED   => __( 'spam complaint', 'connector-for-sendora' ),
+			self::UNSUBSCRIBED => __( 'unsubscribed', 'connector-for-sendora' ),
 			default            => $reason,
 		};
 	}

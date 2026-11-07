@@ -6,12 +6,12 @@ Written against MailPoet 5.45.
 
 MailPoet never calls `wp_mail()`. Each of its sending methods (MailPoet's
 Sending Service, your web host, SMTP, Amazon SES, SendGrid) sends with MailPoet's
-own mailer, and no filter makes it use `wp_mail()`. Sendora for WordPress
+own mailer, and no filter makes it use `wp_mail()`. Connector for Sendora
 therefore cannot send MailPoet's newsletters, or its confirmation and welcome
 emails, and there is no unsubscribe link to set up for them.
 
 Under **MailPoet → Settings → Send With…**, turn off sending WordPress's own
-emails with MailPoet: with Sendora for WordPress active, WordPress's emails go
+emails with MailPoet: with Connector for Sendora active, WordPress's emails go
 through Sendora and that setting does nothing.
 
 ## Keeping subscribers in step

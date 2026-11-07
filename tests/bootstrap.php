@@ -44,7 +44,7 @@ tests_add_filter(
 	static function () use ( $sendora_wp_root ): void {
 		// wp-tests-config.php has run by now: check it defined no key.
 		SendoraGuard::refuse( SendoraGuard::violations( 'getenv', 'defined' ) );
-		require_once $sendora_wp_root . '/sendora-for-wp.php';
+		require_once $sendora_wp_root . '/connector-for-sendora.php';
 	}
 );
 

@@ -1,8 +1,8 @@
-# Sendora for WordPress
+# Connector for Sendora
 
 A WordPress plugin that sends the site's email through [Sendora](https://sendora.se)'s API instead of PHP `mail()` or SMTP.
 
-Once an API key is set under **Settings → Sendora**, `wp_mail()` sends every message through Sendora on the transactional stream. Without a key, WordPress sends email as it would without the plugin.
+Once an API key is set under **Settings → Connector for Sendora**, `wp_mail()` sends every message through Sendora on the transactional stream. Without a key, WordPress sends email as it would without the plugin.
 
 ## Configuration
 
@@ -49,7 +49,7 @@ Each address that bounced for good, complained or unsubscribed goes on a suppres
 - A hard bounce stops all mail to the address. A complaint or an unsubscribe stops broadcasts only, so a password reset still arrives. A soft bounce stops nothing.
 - A send leaves suppressed recipients out. The data of `wp_mail_succeeded` and `wp_mail_failed` lists them in `sendora_wp_suppressed`, address to reason. When every recipient is left out, `wp_mail()` returns false and fires `wp_mail_failed` with a `WP_Error` that names them and whose `sendora_wp_error_code` is `recipient_suppressed`.
 - The filter `sendora_wp_is_suppressed` has the last word. It receives whether the list skips the address, the address in lower case, the stream (`'transactional'` or `'broadcast'`) and the reason or null, and returns true to skip it.
-- **Tools → Sendora suppressions** lists the addresses, with a search, removes one, and imports an address verifier's results (below). Sendora keeps a suppression list of its own, which this does not change: only Sendora's support can take an address off it after a complaint or an unsubscribe.
+- **Tools → Connector for Sendora suppressions** lists the addresses, with a search, removes one, and imports an address verifier's results (below). Sendora keeps a suppression list of its own, which this does not change: only Sendora's support can take an address off it after a complaint or an unsubscribe.
 
 ### Cleaning a list before the first send
 
@@ -71,7 +71,7 @@ The file is CSV with a header row, separated by commas, semicolons or tabs; a UT
 
 Column names and statuses are matched whatever their case. The output gives counts only: rows read, addresses suppressed (or that would be), addresses already on the list, and rows skipped with why (a status that does not suppress, no address, an address that is not valid, an address repeated in the file).
 
-The same import is on **Tools → Sendora suppressions**, for a CSV file of up to 10 MB (or PHP's upload limit, if lower): the upload is read as a dry run and deleted, and nothing is written until the import is confirmed.
+The same import is on **Tools → Connector for Sendora suppressions**, for a CSV file of up to 10 MB (or PHP's upload limit, if lower): the upload is read as a dry run and deleted, and nothing is written until the import is confirmed.
 
 Options for known verifiers' exports:
 
@@ -117,8 +117,8 @@ Set `WP_ENV_PORT` and `WP_ENV_TESTS_PORT` to run several checkouts at once.
 ### Building and releasing
 
 ```sh
-npm run make-pot              # languages/sendora-for-wp.pot from the working tree
-npm run build                 # build/sendora-for-wp/ and build/sendora-for-wp.zip
+npm run make-pot              # languages/connector-for-sendora.pot from the working tree
+npm run build                 # build/connector-for-sendora/ and build/connector-for-sendora.zip
 node bin/build.mjs v1.2.3     # the same, refusing unless the plugin's files say 1.2.3
 ```
 

@@ -5,7 +5,7 @@
  * @package SendoraWP
  */
 
-define( 'SENDORA_WP_FILE', dirname( __DIR__ ) . '/sendora-for-wp.php' );
+define( 'SENDORA_WP_FILE', dirname( __DIR__ ) . '/connector-for-sendora.php' );
 define( 'SENDORA_WP_VERSION', '0.3.0' );
 
 if ( ! defined( 'ABSPATH' ) ) {

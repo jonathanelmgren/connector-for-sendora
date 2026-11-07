@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 export const root = dirname(dirname(fileURLToPath(import.meta.url)));
 
 /** The plugin's slug: its main file and text domain. */
-export const SLUG = 'sendora-for-wp';
+export const SLUG = 'connector-for-sendora';
 
 /** wp-env mounts the checkout under its directory name. */
 export const pluginDir = `wp-content/plugins/${basename(root)}`;

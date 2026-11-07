@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Writes the translation template, languages/sendora-for-wp.pot, from
+// Writes the translation template, languages/connector-for-sendora.pot, from
 // the plugin's PHP with WP-CLI's i18n command in a throwaway container.
 //
 //   node bin/make-pot.mjs           the checkout, without its development files

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Builds the distributable plugin: build/sendora-for-wp/ and
-// build/sendora-for-wp.zip, the directory zipped as WordPress expects.
+// Builds the distributable plugin: build/connector-for-sendora/ and
+// build/connector-for-sendora.zip, the directory zipped as WordPress expects.
 //
 //   node bin/build.mjs            the version in the plugin's files
 //   node bin/build.mjs v1.2.3     also checks the files say 1.2.3, for a release tag

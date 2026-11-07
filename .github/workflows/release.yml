@@ -48,7 +48,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: sendora-for-wp
+          name: connector-for-sendora
           path: build/
           if-no-files-found: error
 
@@ -63,13 +63,13 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: sendora-for-wp
+          name: connector-for-sendora
           path: build/
 
       - name: Create the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" build/sendora-for-wp.zip --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes --verify-tag
+        run: gh release create "$GITHUB_REF_NAME" build/connector-for-sendora.zip --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes --verify-tag
 
   wordpress-org:
     name: Deploy to the wordpress.org plugin directory
@@ -85,7 +85,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: sendora-for-wp
+          name: connector-for-sendora
           path: build/
 
       - name: Deploy
@@ -94,5 +94,5 @@ jobs:
         env:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
-          SLUG: sendora-for-wp
-          BUILD_DIR: build/sendora-for-wp
+          SLUG: connector-for-sendora
+          BUILD_DIR: build/connector-for-sendora

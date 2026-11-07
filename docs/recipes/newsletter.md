@@ -2,7 +2,7 @@
 
 Written against The Newsletter Plugin 9.5. Put the code in a small plugin of
 your own (for instance `wp-content/mu-plugins/sendora-newsletter.php`), not in
-Sendora for WordPress.
+Connector for Sendora.
 
 The Newsletter Plugin sends through `wp_mail()` with its default mailer, so
 Sendora sends its messages. A delivery add-on that registers its
@@ -37,7 +37,7 @@ add_filter(
 );
 ```
 
-Sendora for WordPress removes the header before the message is sent, and
+Connector for Sendora removes the header before the message is sent, and
 removes The Newsletter Plugin's `List-Unsubscribe` headers too: Sendora sets
 its own.
 
@@ -114,7 +114,7 @@ function my_site_tnp_set_status( string $status_constant ): callable {
 		$user       = $newsletter->get_user( $email );
 		if ( $user && $user->status !== $status ) {
 			$newsletter->set_user_status( $user, $status );
-			$newsletter->add_user_log( $user, 'sendora-for-wp' );
+			$newsletter->add_user_log( $user, 'connector-for-sendora' );
 		}
 	};
 }
