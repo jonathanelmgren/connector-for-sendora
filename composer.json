@@ -1,5 +1,5 @@
 {
-	"name": "sendora/sendora-for-wp",
+	"name": "jonathanelmgren/connector-for-sendora",
 	"description": "Sends WordPress email through Sendora's API.",
 	"type": "wordpress-plugin",
 	"license": "GPL-2.0-or-later",

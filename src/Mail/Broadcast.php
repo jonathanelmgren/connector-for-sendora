@@ -77,10 +77,10 @@ final class Broadcast {
 		}
 
 		if ( null !== $message->text && ! self::has_placeholder( $message->text ) ) {
-			throw self::missing_placeholder( __( 'text', 'sendora-for-wp' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
+			throw self::missing_placeholder( __( 'text', 'connector-for-sendora' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
 		}
 		if ( null !== $message->html && ! self::has_placeholder( $message->html ) ) {
-			throw self::missing_placeholder( __( 'HTML', 'sendora-for-wp' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
+			throw self::missing_placeholder( __( 'HTML', 'connector-for-sendora' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- never output as is; whoever shows it escapes it.
 		}
 
 		$message = $message->with_headers(
@@ -111,7 +111,7 @@ final class Broadcast {
 	private static function missing_placeholder( string $part ): SendFailed {
 		$failure = sprintf(
 			/* translators: 1: a part of the message, "text" or "HTML"; 2: the placeholder, {{ unsubscribe_url }}. */
-			__( 'The message is a broadcast, and its %1$s part does not contain %2$s, which Sendora needs on every broadcast for the recipient\'s unsubscribe link.', 'sendora-for-wp' ),
+			__( 'The message is a broadcast, and its %1$s part does not contain %2$s, which Sendora needs on every broadcast for the recipient\'s unsubscribe link.', 'connector-for-sendora' ),
 			$part,
 			self::UNSUBSCRIBE_PLACEHOLDER
 		);

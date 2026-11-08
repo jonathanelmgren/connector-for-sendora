@@ -117,7 +117,7 @@ final class Webhook {
 		if ( '' === $secret ) {
 			return new WP_Error(
 				'sendora_wp_webhook_secret_missing',
-				__( 'The webhook has no signing secret set.', 'sendora-for-wp' ),
+				__( 'The webhook has no signing secret set.', 'connector-for-sendora' ),
 				array( 'status' => self::STATUS_UNAVAILABLE )
 			);
 		}
@@ -140,7 +140,7 @@ final class Webhook {
 		if ( DeliveryLog::IN_PROGRESS === $claim ) {
 			return new WP_Error(
 				'sendora_wp_delivery_in_progress',
-				__( 'This delivery is being handled already.', 'sendora-for-wp' ),
+				__( 'This delivery is being handled already.', 'connector-for-sendora' ),
 				array( 'status' => self::STATUS_UNAVAILABLE )
 			);
 		}
@@ -160,7 +160,7 @@ final class Webhook {
 	private static function unhandled(): WP_Error {
 		return new WP_Error(
 			'sendora_wp_delivery_failed',
-			__( 'The delivery could not be handled.', 'sendora-for-wp' ),
+			__( 'The delivery could not be handled.', 'connector-for-sendora' ),
 			array( 'status' => self::STATUS_UNAVAILABLE )
 		);
 	}

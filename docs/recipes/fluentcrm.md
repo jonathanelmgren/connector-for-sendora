@@ -66,7 +66,7 @@ add_filter(
 );
 ```
 
-FluentCRM sends HTML only; Sendora for WordPress writes the text part from it,
+FluentCRM sends HTML only; Connector for Sendora writes the text part from it,
 link included.
 
 ## Keeping contacts in step

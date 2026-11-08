@@ -150,7 +150,7 @@ final class SuppressionImport {
 		$token = isset( $_POST[ self::TOKEN_FIELD ] ) ? sanitize_text_field( wp_unslash( $_POST[ self::TOKEN_FIELD ] ) ) : '';
 		$saved = $this->saved();
 		if ( null === $saved || self::STATE_PREVIEW !== $saved['state'] || ! hash_equals( (string) $saved['token'], $token ) ) {
-			$this->save_error( __( 'That import has expired or was already done. Upload the file again.', 'sendora-for-wp' ) );
+			$this->save_error( __( 'That import has expired or was already done. Upload the file again.', 'connector-for-sendora' ) );
 			$this->back();
 		}
 
@@ -180,7 +180,7 @@ final class SuppressionImport {
 	/** Shows the import's part of the screen: a pending dry run, a result, or the upload form. */
 	public function render(): void {
 		$saved = $this->saved();
-		echo '<h2>' . esc_html__( 'Import an address verifier\'s results', 'sendora-for-wp' ) . '</h2>';
+		echo '<h2>' . esc_html__( 'Import an address verifier\'s results', 'connector-for-sendora' ) . '</h2>';
 
 		if ( null !== $saved && self::STATE_PREVIEW === $saved['state'] ) {
 			$this->render_preview( self::plan( $saved['plan'] ), (string) $saved['token'] );
@@ -188,7 +188,7 @@ final class SuppressionImport {
 		}
 		if ( null !== $saved && self::STATE_DONE === $saved['state'] ) {
 			delete_transient( self::transient() );
-			echo '<div class="notice notice-success inline"><p>' . esc_html__( 'The import is done.', 'sendora-for-wp' ) . '</p>';
+			echo '<div class="notice notice-success inline"><p>' . esc_html__( 'The import is done.', 'connector-for-sendora' ) . '</p>';
 			self::render_lines( $saved['summary'] );
 			echo '</div>';
 		} elseif ( null !== $saved && self::STATE_ERROR === $saved['state'] ) {
@@ -205,7 +205,7 @@ final class SuppressionImport {
 	 */
 	private function authorise( string $action ): void {
 		if ( ! current_user_can( self::CAPABILITY ) ) {
-			wp_die( esc_html__( 'You are not allowed to change the suppression list.', 'sendora-for-wp' ), '', array( 'response' => 403 ) );
+			wp_die( esc_html__( 'You are not allowed to change the suppression list.', 'connector-for-sendora' ), '', array( 'response' => 403 ) );
 		}
 		check_admin_referer( $action );
 	}
@@ -243,22 +243,22 @@ final class SuppressionImport {
 
 	/** The upload form. */
 	private function render_form(): void {
-		echo '<p>' . esc_html__( 'Sendora wants hard bounces to stay below 5% of the mail sent. Before the first send to an old list, run the list through an address verifier and upload its results as CSV: every address with a status that suppresses goes on the list as a hard bounce. Nothing is written until you confirm.', 'sendora-for-wp' ) . '</p>';
+		echo '<p>' . esc_html__( 'Sendora wants hard bounces to stay below 5% of the mail sent. Before the first send to an old list, run the list through an address verifier and upload its results as CSV: every address with a status that suppresses goes on the list as a hard bounce. Nothing is written until you confirm.', 'connector-for-sendora' ) . '</p>';
 		echo '<form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		echo '<input type="hidden" name="action" value="' . esc_attr( self::PREVIEW_ACTION ) . '" />';
 		wp_nonce_field( self::PREVIEW_ACTION );
 		echo '<table class="form-table" role="presentation"><tbody>';
 		printf(
 			'<tr><th scope="row"><label for="sendora-wp-import-file">%s</label></th><td><input type="file" id="sendora-wp-import-file" name="%s" accept=".csv,text/csv" required /><p class="description">%s</p></td></tr>',
-			esc_html__( 'CSV file', 'sendora-for-wp' ),
+			esc_html__( 'CSV file', 'connector-for-sendora' ),
 			esc_attr( self::FILE_FIELD ),
 			/* translators: %s: the largest file size, such as "10 MB". */
-			esc_html( sprintf( __( 'With a header row. At most %s.', 'sendora-for-wp' ), size_format( self::max_bytes() ) ) )
+			esc_html( sprintf( __( 'With a header row. At most %s.', 'connector-for-sendora' ), size_format( self::max_bytes() ) ) )
 		);
 		$fields = array(
-			self::EMAIL_COLUMN_FIELD  => array( __( 'Address column', 'sendora-for-wp' ), ImportOptions::DEFAULT_EMAIL_COLUMN, '' ),
-			self::STATUS_COLUMN_FIELD => array( __( 'Status column', 'sendora-for-wp' ), ImportOptions::DEFAULT_STATUS_COLUMN, '' ),
-			self::STATUSES_FIELD      => array( __( 'Statuses that suppress', 'sendora-for-wp' ), implode( ',', ImportOptions::DEFAULT_STATUSES ), __( 'Comma-separated. Column names and statuses are matched whatever their case.', 'sendora-for-wp' ) ),
+			self::EMAIL_COLUMN_FIELD  => array( __( 'Address column', 'connector-for-sendora' ), ImportOptions::DEFAULT_EMAIL_COLUMN, '' ),
+			self::STATUS_COLUMN_FIELD => array( __( 'Status column', 'connector-for-sendora' ), ImportOptions::DEFAULT_STATUS_COLUMN, '' ),
+			self::STATUSES_FIELD      => array( __( 'Statuses that suppress', 'connector-for-sendora' ), implode( ',', ImportOptions::DEFAULT_STATUSES ), __( 'Comma-separated. Column names and statuses are matched whatever their case.', 'connector-for-sendora' ) ),
 		);
 		foreach ( $fields as $name => [ $label, $value, $help ] ) {
 			printf(
@@ -270,7 +270,7 @@ final class SuppressionImport {
 			);
 		}
 		echo '</tbody></table>';
-		submit_button( __( 'Check the file', 'sendora-for-wp' ), 'secondary', 'submit', false );
+		submit_button( __( 'Check the file', 'connector-for-sendora' ), 'secondary', 'submit', false );
 		echo '</form>';
 	}
 
@@ -281,12 +281,12 @@ final class SuppressionImport {
 	 * @param string     $token The import's token.
 	 */
 	private function render_preview( ImportPlan $plan, string $token ): void {
-		echo '<div class="notice notice-info inline"><p>' . esc_html__( 'Dry run: nothing has been written yet.', 'sendora-for-wp' ) . '</p>';
+		echo '<div class="notice notice-info inline"><p>' . esc_html__( 'Dry run: nothing has been written yet.', 'connector-for-sendora' ) . '</p>';
 		self::render_lines( $plan->summary() );
 		echo '</div><p>';
 		foreach ( array(
-			self::CONFIRM_ACTION => array( __( 'Import', 'sendora-for-wp' ), 'primary' ),
-			self::CANCEL_ACTION  => array( __( 'Cancel', 'sendora-for-wp' ), 'secondary' ),
+			self::CONFIRM_ACTION => array( __( 'Import', 'connector-for-sendora' ), 'primary' ),
+			self::CANCEL_ACTION  => array( __( 'Cancel', 'connector-for-sendora' ), 'secondary' ),
 		) as $action => [ $label, $type ] ) {
 			echo '<form method="post" style="display:inline-block;margin-right:8px" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 			echo '<input type="hidden" name="action" value="' . esc_attr( $action ) . '" />';

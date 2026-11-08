@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:       Sendora for WordPress
+ * Plugin Name:       Connector for Sendora
  * Description:       Sends the site's email through Sendora's API instead of PHP mail() or SMTP.
  * Version:           0.3.0
  * Requires at least: 6.7
@@ -8,7 +8,7 @@
  * Author:            Jonathan Elmgren
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:       sendora-for-wp
+ * Text Domain:       connector-for-sendora
  * Domain Path:       /languages
  *
  * @package SendoraWP
@@ -42,7 +42,7 @@ function sendora_wp_requirement_errors( $php_version, $wp_version ) {
 	if ( version_compare( $php_version, SENDORA_WP_MIN_PHP, '<' ) ) {
 		$errors[] = sprintf(
 			/* translators: 1: required PHP version, 2: the site's PHP version. */
-			__( 'Sendora needs PHP %1$s or newer. This site runs PHP %2$s.', 'sendora-for-wp' ),
+			__( 'Connector for Sendora needs PHP %1$s or newer. This site runs PHP %2$s.', 'connector-for-sendora' ),
 			SENDORA_WP_MIN_PHP,
 			$php_version
 		);
@@ -50,7 +50,7 @@ function sendora_wp_requirement_errors( $php_version, $wp_version ) {
 	if ( version_compare( $wp_version, SENDORA_WP_MIN_WP, '<' ) ) {
 		$errors[] = sprintf(
 			/* translators: 1: required WordPress version, 2: the site's WordPress version. */
-			__( 'Sendora needs WordPress %1$s or newer. This site runs WordPress %2$s.', 'sendora-for-wp' ),
+			__( 'Connector for Sendora needs WordPress %1$s or newer. This site runs WordPress %2$s.', 'connector-for-sendora' ),
 			SENDORA_WP_MIN_WP,
 			$wp_version
 		);
@@ -81,7 +81,7 @@ function sendora_wp_activate() {
 	deactivate_plugins( plugin_basename( SENDORA_WP_FILE ) );
 	wp_die(
 		'<p>' . implode( '</p><p>', array_map( 'esc_html', $errors ) ) . '</p>',
-		esc_html__( 'Sendora cannot be activated', 'sendora-for-wp' ),
+		esc_html__( 'Connector for Sendora cannot be activated', 'connector-for-sendora' ),
 		array( 'back_link' => true )
 	);
 }
@@ -97,7 +97,7 @@ function sendora_wp_requirements_notice() {
 		return;
 	}
 	foreach ( sendora_wp_site_requirement_errors() as $error ) {
-		echo '<div class="notice notice-error"><p>' . esc_html( $error ) . ' ' . esc_html__( 'The plugin is not running, and WordPress sends email as it would without it.', 'sendora-for-wp' ) . '</p></div>';
+		echo '<div class="notice notice-error"><p>' . esc_html( $error ) . ' ' . esc_html__( 'The plugin is not running, and WordPress sends email as it would without it.', 'connector-for-sendora' ) . '</p></div>';
 	}
 }
 
