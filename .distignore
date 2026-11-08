@@ -1,4 +1,4 @@
-# Development files, left out of a release and of Plugin Check.
+# Development files, left out of a release.
 .git
 .github
 .distignore

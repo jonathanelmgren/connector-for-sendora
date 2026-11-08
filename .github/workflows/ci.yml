@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   check:
-    name: PHPCS, PHPStan, PHPUnit, Plugin Check
+    name: PHPCS, PHPStan, PHPUnit, Plugin Check on the release zip
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

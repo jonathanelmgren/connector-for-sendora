@@ -106,11 +106,11 @@ The host needs Node.js and Docker only: Composer, PHPCS and PHPStan run in a thr
 npm install
 npm run composer -- install   # PHP dependencies; prefixes Sendora's SDK under SendoraWP\Vendor
 npm run env:start             # WordPress at WP_ENV_PORT (8888), its tests site at WP_ENV_TESTS_PORT (8889)
-npm run check                 # the gate: lint, stan, test, plugin-check
+npm run check                 # the gate: lint, stan, test, build, plugin-check on the zip
 npm run env:stop
 ```
 
-Single steps: `npm run lint` (PHPCS with WordPress Coding Standards; `npm run format` fixes what it can), `npm run stan` (PHPStan), `npm test` (PHPUnit; `npm test -- --filter MailerTest` for one test class), `npm run plugin-check`.
+Single steps: `npm run lint` (PHPCS with WordPress Coding Standards; `npm run format` fixes what it can), `npm run stan` (PHPStan), `npm test` (PHPUnit; `npm test -- --filter MailerTest` for one test class), `npm run plugin-check` (Plugin Check on `build/connector-for-sendora.zip`; run `npm run build` first).
 
 Set `WP_ENV_PORT` and `WP_ENV_TESTS_PORT` to run several checkouts at once.
 
