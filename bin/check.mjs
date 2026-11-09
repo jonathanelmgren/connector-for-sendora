@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// The local gate: PHPCS, PHPStan, PHPUnit and Plugin Check, the same steps
-// CI runs. Starts wp-env when it is not running; leaves it running, so the
+// The local gate: PHPCS, PHPStan, PHPUnit, the release build and Plugin
+// Check on its zip, the same steps CI runs. Starts wp-env when it is not running; leaves it running, so the
 // next run is quicker (`npm run env:stop` stops it). Stops at the first
 // failing step.
 import { refuseSendoraVariables, spawn } from './env.mjs';
@@ -28,6 +28,7 @@ const STEPS = [
 	],
 	['wp-env', ['node', ['bin/wp-env.mjs', 'start']]],
 	['test', ['node', ['bin/test.mjs']]],
+	['build', ['node', ['bin/build.mjs']]],
 	['plugin-check', ['node', ['bin/plugin-check.mjs']]],
 ];
 

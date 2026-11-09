@@ -1,23 +1,24 @@
 #!/usr/bin/env node
 // Runs Plugin Check (the plugin-check plugin pinned in .wp-env.json) on the
-// working tree in wp-env's tests site. Paths in .distignore are skipped, so
-// it checks what a release would ship. Exits 1 on any error; warnings are
-// printed and do not fail.
+// release zip, build/connector-for-sendora.zip from `npm run build`: the zip
+// is unpacked into wp-env's tests site as its own plugin, checked, and
+// removed. Exits 1 on any error; warnings are printed and do not fail.
 import {
 	copyFileSync,
+	cpSync,
 	existsSync,
 	readdirSync,
 	readFileSync,
 	rmSync,
-	statSync,
 } from 'node:fs';
 import { homedir } from 'node:os';
-import { basename, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import {
-	distIgnored,
+	inComposerContainer,
 	refuseSendoraVariables,
 	root,
 	SLUG,
+	spawn,
 	wpEnvOutput,
 } from './env.mjs';
 
@@ -36,12 +37,12 @@ const RUNTIME_CHECKS = [
 	'non_blocking_scripts',
 ];
 
+/** Where `npm run build` leaves the zip, relative to the checkout. */
+const BUILD_DIR = 'build';
+const ZIP = `${SLUG}.zip`;
 
-function isDirectory(path) {
-	return (
-		existsSync(join(root, path)) && statSync(join(root, path)).isDirectory()
-	);
-}
+/** Where the zip is unpacked, inside BUILD_DIR. */
+const UNPACKED = 'plugin-check';
 
 /**
  * wp-env's home: WP_ENV_HOME, else `~/wp-env` where Docker comes from a
@@ -113,8 +114,47 @@ if (activated.status !== 0) {
 	process.exit(activated.status || 1);
 }
 
-const ignored = distIgnored();
-const removeDropIn = placeDropIn(wpEnvInstallPath());
+/**
+ * Unpacks the zip and puts it in the tests site's plugins directory, next to
+ * the checkout, the way a site that installs it would have it. With rootless
+ * Docker the container user cannot write there but the host can, so the
+ * files are copied from here. Returns what removes them again.
+ */
+function placeBuiltPlugin(installPath) {
+	if (!existsSync(join(root, BUILD_DIR, ZIP))) {
+		console.error(`No ${BUILD_DIR}/${ZIP}: run npm run build first.`);
+		process.exit(1);
+	}
+	const unpacked = join(root, BUILD_DIR, UNPACKED);
+	rmSync(unpacked, { recursive: true, force: true });
+	const status = spawn('docker', [
+		...inComposerContainer({ network: false, cwd: BUILD_DIR }),
+		'unzip',
+		'-q',
+		ZIP,
+		'-d',
+		UNPACKED,
+	]);
+	if (status !== 0) {
+		console.error(`${BUILD_DIR}/${ZIP} could not be unpacked.`);
+		process.exit(status);
+	}
+	const target = join(
+		installPath,
+		'tests-WordPress',
+		'wp-content',
+		'plugins',
+		SLUG,
+	);
+	rmSync(target, { recursive: true, force: true });
+	cpSync(join(unpacked, SLUG), target, { recursive: true });
+	rmSync(unpacked, { recursive: true, force: true });
+	return () => rmSync(target, { recursive: true, force: true });
+}
+
+const installPath = wpEnvInstallPath();
+const removeBuiltPlugin = placeBuiltPlugin(installPath);
+const removeDropIn = placeDropIn(installPath);
 let result;
 try {
 	result = wpEnvOutput([
@@ -123,15 +163,13 @@ try {
 		'wp',
 		'plugin',
 		'check',
-		basename(root),
-		`--slug=${SLUG}`,
+		SLUG,
 		`--exclude-checks=${RUNTIME_CHECKS.join(',')}`,
-		`--exclude-directories=${ignored.filter(isDirectory).join(',')}`,
-		`--exclude-files=${ignored.filter((path) => !isDirectory(path)).join(',')}`,
 		'--format=json',
 	]);
 } finally {
 	removeDropIn();
+	removeBuiltPlugin();
 }
 if (result.status !== 0) {
 	console.error('Plugin Check did not run.');
